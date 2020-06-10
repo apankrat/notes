@@ -1,8 +1,9 @@
 # Human-friendly intrusive containers in C++
 
 Intrusive containers is an implementation style of convential data storage structures 
-(such as lists or trees) that uses  "stubs" of container-specific control data *embedded*
-into application data and then uses these stubs to "weave" these data into a container.
+(such as lists or trees) that embeds "stubs" of container-specific control data into
+application data structures and then uses "weaves" these stubs together to form a
+container.
 
 # C-style
 
@@ -13,16 +14,15 @@ Define the container structure (the "head"):
         struct list_item * first;
     };
 
-Define per-item data (the "item") that contains all container-specific data needed for
-adding, finding, removing and otherwise working with a container item:
+Define per-item data (the "item") that is used to place an item in a container:
 
     struct list_item
     {
         struct list_item * next;
     };
     
-Add an 'item' instance to the application data, one item for each container that this 
-data can be on:
+Add an 'item' instance to the application data, one item for each container that 
+this data can be on:
 
     struct user_data
     {
@@ -72,12 +72,13 @@ structure type and the field name.
 # Pros
 
 Adding items to a container requires no memory allocation. All required memory is effectively
-preallocated by embedding container control items into user data.
+preallocated by embedding container control items into the user data.
 
-Items can be placed into multiple containers at once, e.g. on different maps, each keyed by a different  field 
-of the user data.
+Items can be placed into multiple containers at once, e.g. they can added to multiple maps,
+each keyed by a different field of the user data.
 
-Item disposal and cleanup is greatly simplified, assuming a container supports removal by control item (many do).
+Item disposal and cleanup is greatly simplified, assuming a container supports removal by 
+control item (many do).
 
 # Cons
 
