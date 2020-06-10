@@ -166,11 +166,11 @@ The *trick* here is the use of `tag` template argument, which is
 set to the *address of static class member*, a value that is
 guaranteed to be globally unique.
 
-When used, `LIST_ITEM(foo, vip_list)` expands like so:
+When used, `LIST_ITEM(foo, vip_item)` expands like so:
 
     ...
-    static void * vip_list_tag;
-    list_item<foo, &vip_list_tag> vip_list;
+    static void * vip_item_tag;
+    list_item<foo, &vip_item_tag> vip_item;
     ...
     
 and creates a distinct `list_item` class just for the `vip_list` member.
@@ -182,5 +182,7 @@ The second part is to provide a matching `container_of` version and this is take
         {                                                           \
                 return (T*)((char*)item - (int)offsetof(T, field)); \
         }
+
+Note how this macro is not specific to `list_item` and works for any container implemented this way.
 
 And that's all there's to it.
