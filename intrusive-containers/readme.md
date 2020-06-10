@@ -177,12 +177,13 @@ and creates a distinct `list_item` class just for the `vip_list` member.
 
 The second part is to provide a matching `container_of` version and this is taken care of like so:
 
-    #define CONTAINER_OF(T, field)                                  \
-        inline T * container_of(decltype(T::field) * item)          \
-        {                                                           \
-                return (T*)((char*)item - (int)offsetof(T, field)); \
+    #define CONTAINER_OF(T, field)                               \
+        inline T * container_of(decltype(T::field) * item)       \
+        {                                                        \
+            return (T*)((char*)item - (int)offsetof(T, field));  \
         }
 
-Note how this macro is not specific to `list_item` and works for any container implemented this way.
+Note how this macro is not specific to `list_item` in any way and works for any container 
+implemented along the same lines.
 
 And that's all there's to it.
