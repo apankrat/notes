@@ -112,26 +112,28 @@ keeping code pretty close in readability to its C-style version:
         LIST_ITEM( user_data, hip_item );
     };
 
-    LIST_ITEM_IMPL( user_data, vip_item );
-    LIST_ITEM_IMPL( user_data, hip_item );
-    
-    // vars
-    
-    LIST_HEAD(user_data, vip_item) vip;  // vip list
-    LIST_HEAD(user_data, hip_item) hip;  // hip list
+    CONTAINER_OF( user_data, vip_item );
+    CONTAINER_OF( user_data, hip_item );
 
-    user_data  foo;
-    
     // usage
-    
-    list_add(&foo.vip_item, &vip);       // this compiles ...
-    list_add(&foo.vip_item, &hip);       // .. and this doesn't
-    
-    for (p = vip.first; p; p = p->next)
+
+    void test()
     {
-        user_data * u = container_of(p);
-        ...
+        LIST_HEAD(user_data, vip_item) vip;  // vip list
+        LIST_HEAD(user_data, hip_item) hip;  // hip list
+    
+        user_data  foo;
         
+        list_add(&foo.vip_item, &vip);       // this compiles ...
+        list_add(&foo.vip_item, &hip);       // .. and this doesn't
+        
+        for (p = vip.first; p; p = p->next)
+        {
+            user_data * u = container_of(p);
+            ...
+        }
+    }
+
 Note how `container_of` now needs just a pointer to `list_item`. In fact:
 
     user_data foo;
@@ -174,10 +176,10 @@ and creates a distinct `list_item` class just for the `vip_list` member.
 
 The second part is to provide a matching `container_of` version and this is taken care of like so:
 
-    #define LIST_ITEM_IMPL(T, field) \
-        inline T * container_of(list_item<T, &T::field ## _anchor> * item)  \
-        {                                                                   \
-            return (T*)((char*)item - (int)offsetof(T, field));             \
+    #define CONTAINER_OF(T, field)                                  \
+        inline T * container_of(decltype(T::field) * item)          \
+        {                                                           \
+                return (T*)((char*)item - (int)offsetof(T, field)); \
         }
 
 And that's all there's to it.

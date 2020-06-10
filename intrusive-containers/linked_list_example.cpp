@@ -12,8 +12,8 @@ struct foo
 	LIST_ITEM(foo, hip_item);
 };
 
-LIST_ITEM_IMPL(foo, vip_item);           // container_of() for vip list
-LIST_ITEM_IMPL(foo, hip_item);           // container_of() for hip list
+CONTAINER_OF_IMPL(foo, vip_item);
+CONTAINER_OF_IMPL(foo, hip_item);
 
 /*
  *

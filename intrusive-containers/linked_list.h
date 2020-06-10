@@ -25,14 +25,14 @@ struct list_head
 	static void * field ## _tag;          \
 	list_item<T, &(field ## _tag)> field;
 
-#define LIST_ITEM_IMPL(T, field)                                        \
-	inline T * container_of(list_item<T, &T::field ## _tag> * item) \
-	{                                                               \
-		return (T*)((char*)item - (int)offsetof(T, field));     \
-	}
-
-#define LIST_HEAD(T, field) \
+#define LIST_HEAD(T, field)                   \
 	list_head<T, &T::field ## _tag>
+
+#define CONTAINER_OF(T, field)                                      \
+	inline T * container_of(decltype(T::field) * item)          \
+	{                                                           \
+		return (T*)((char*)item - (int)offsetof(T, field)); \
+	}
 
 /*
  *	Sample API
