@@ -27,9 +27,9 @@ data can be on:
     struct user_data
     {
         ...
-        struct list_item  vip_list;
-        struct list_item  hip_list;
-        struct list_item  hop_list;
+        struct list_item  vip_item;
+        struct list_item  hip_item;
+        struct list_item  hop_item;
     }; 
     
 Use it:
@@ -41,29 +41,29 @@ Use it:
     ...
     
     // populate lists
-    list_add(&foo.vip_list, &vip);  // foo -> 'vip' list
+    list_add(&foo.vip_item, &vip);  // foo -> 'vip' list
 
-    list_add(&bar.vip_list, &vip);  // bar -> 'vip' list
-    list_add(&bar.hip_list, &hip);  // bar -> 'hip' list
+    list_add(&bar.vip_item, &vip);  // bar -> 'vip' list
+    list_add(&bar.hip_item, &hip);  // bar -> 'hip' list
 
-    list_add(&baz.vip_list, &vip);  // baz -> 'vip' list
-    list_add(&baz.hop_list, &hop);  // baz -> 'hop' list
+    list_add(&baz.vip_item, &vip);  // baz -> 'vip' list
+    list_add(&baz.hop_item, &hop);  // baz -> 'hop' list
     
     ...
     
     // traverse the 'vip' list
     for (p = vip.first; p; p = p->next)
     {
-        struct user_data * u = container_of(p, struct user_data, vip_list);
+        struct user_data * u = container_of(p, struct user_data, vip_item);
         ...
     }
     
     ...
     
     // remove 'bar' from all lists
-    list_del(&bar.vip_list);
-    list_del(&bar.hip_list);
-    list_del(&bar.hop_list);
+    list_del(&bar.vip_item);
+    list_del(&bar.hip_item);
+    list_del(&bar.hop_item);
     
 The magic ingredient here is, of course, the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage) macro. 
 Given a pointer to a structure *field* it allows restoring a pointer to the structure itself if told both the
@@ -85,15 +85,15 @@ The main drawback is the risk of inadvertent `container_of` misuse:
 
     for (p = vip.first; p; p = p->next)             // traversing _vip_ list ...
     {
-        u = container_of(p, user_data, hip_list);   // ... but mistakenly recovering as a _hip_ list item
+        u = container_of(p, user_data, hip_item);   // ... but mistakenly recovering as a _hip_ list item
         ...
 
-This will cause `u` to point at a random part of memory with all the consequences.
+This will cause `u` to point at some random memory with all the consequences.
 
 # C++-ized version
 
 Due to the need for explicit casting in `container_of`, intrusive containers are not readily
-compatible with C++. At least as far as improving code safety is concerned.
+compatible with C++. At least not as far as improving code safety is concerned.
 
 Boost has an [implementation](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html), 
 but it's rather obvious 
@@ -108,26 +108,24 @@ keeping code pretty close in readability to its C-style version:
     struct user_data
     {
         ...
-        LIST_ITEM( user_data, vip );
-        LIST_ITEM( user_data, hip );
-        LIST_ITEM( user_data, hop );
+        LIST_ITEM( user_data, vip_item );
+        LIST_ITEM( user_data, hip_item );
     };
 
-    LIST_ITEM_IMPL( user_data, vip );
-    LIST_ITEM_IMPL( user_data, hip );
-    LIST_ITEM_IMPL( user_data, hop );
+    LIST_ITEM_IMPL( user_data, vip_item );
+    LIST_ITEM_IMPL( user_data, hip_item );
     
     // vars
     
-    user_data            foo;
-    LIST_HEAD(foo, vip)  vip;           // vip list
-    LIST_HEAD(foo, hip)  hip;           // hip list
-    LIST_HEAD(foo, hop)  hop;           // hop list
+    LIST_HEAD(user_data, vip_item) vip;  // vip list
+    LIST_HEAD(user_data, hip_item) hip;  // hip list
+
+    user_data  foo;
     
     // usage
     
-    list_add(&foo.vip_list, &vip);      // this compiles ...
-    list_add(&foo.hip_list, &hop);      // .. and this doesn't
+    list_add(&foo.vip_item, &vip);       // this compiles ...
+    list_add(&foo.vip_item, &hip);       // .. and this doesn't
     
     for (p = vip.first; p; p = p->next)
     {
@@ -144,9 +142,6 @@ Note how `container_of` now needs just a pointer to `list_item`. In fact:
     
     p = container_of(&foo.hip);
     assert(p == &foo);
-
-    p = container_of(&foo.hop);
-    assert(p == &foo);
     
 # How it's done
 
@@ -157,7 +152,7 @@ The idea is that we define a distinct `list_item` type for every
     template <typename T, const void * tag>
     struct list_item
     {
-	      list_item<T, tag> * next;
+        list_item<T, tag> * next;
     };
 
     #define LIST_ITEM(T, field)               \
@@ -180,9 +175,9 @@ and creates a distinct `list_item` class just for the `vip_list` member.
 The second part is to provide a matching `container_of` version and this is taken care of like so:
 
     #define LIST_ITEM_IMPL(T, field) \
-        inline T * container_of(list_item<T, &T::field ## _anchor> & item) \
-        {                                                                  \
-		        return (T*)((char*)&item - (int)offsetof(T, field));           \
+        inline T * container_of(list_item<T, &T::field ## _anchor> * item)  \
+        {                                                                   \
+            return (T*)((char*)item - (int)offsetof(T, field));             \
         }
 
-And... that's it.
+And that's all there's to it.
