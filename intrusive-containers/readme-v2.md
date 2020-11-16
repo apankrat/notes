@@ -6,12 +6,12 @@ that showed how C-style "intrusive" containers can be adapted to C++,
 adding compile-time protection against two types of mistakes, but 
 without going full C++ on the syntax.
 
-Second revision further reduces required boilerplate to a near-absolute
+This (second) revision further reduces the boilerplate to a near-absolute
 minimum. Here's an example of how it looks:
 
     /*
-     *  Say we have our data structure and it needs to be on two
-     *  separate lists - vip and hip.
+     *  Say we have our data structure and it needs 
+     *  to be on two separate lists - vip and hip.
      */
     struct user_data
     {
@@ -20,26 +20,26 @@ minimum. Here's an example of how it looks:
     };
 
 `list_item` here is a macro expanding into a templated class instance,
-so under the hood this creates two separate list_item types that are 
-unrelated to each other.
+so under the hood this creates two separate list_item types unrelated
+to each other.
 
-Next, we can instantiate list heads of respective types like so:
+Next, we instantiate two respective lists:
 
     /*
      *  'vip_list' is a head of the list that is chained together
-     *  through user_data::vip fields, and through these fields only!
+     *  through user_data::vip fields, and through these fields only.
      */
     list_head(user_data, vip)  vip_list;
 
     /*
-     *  'hip_list' is similar, but using user_data::hip instead.
+     *  'hip_list' is similar, but it uses user_data::hip instead.
      */
     list_head(user_data, hip)  hip_list;
 
-Next, we can populate the lists:
+Next, we populate the lists:
 
     /*
-     *  Here's an instance of our data structure.
+     *  An instance of our data structure.
      */
     user_data foo;
 
@@ -55,8 +55,8 @@ Next, we can populate the lists:
     vip_list.add( &foo.hip );
     hip_list.add( &foo.vip );
 
-Finally, we can also enumerate items on a list and restore a pointer to
-`user_data` from each item *unambiguously*:
+Finally, we traverse the list and restore a pointer to `user_data` from 
+every list item. And we do it *unambiguously*:
 
     for (auto item = vip_list.first; item; item = item->next)
     {
@@ -64,8 +64,8 @@ Finally, we can also enumerate items on a list and restore a pointer to
 	...
     }
 
-This is very close in readability to the C version, but also comes with 
-compile-time checks against fat fingers. There's now no way to chain data
-items by a wrong control field and it's not possible to mess up the 
-container_of() invokation when recovering data pointer from a container
-item.
+This is *very* close in style and expressivity to the C version, but it 
+also has compile-time safe-guards against fat fingers. There's now no 
+way to chain data items by a wrong control field nor is it possible 
+to mess up the container_of() call when recovering `user_data` pointer
+from a pointer to `list_item`.
