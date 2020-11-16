@@ -28,14 +28,11 @@ struct list_item
 template <typename T, int inst>
 struct list_head
 {
-	// shorthand
-	using list_item = list_item<T, inst>;
-
 	// members
-	list_item * first;
+	list_item<T, inst> * first;
 
 	// methods
-	void add(list_item * item) { /* implement me */ }
+	void add(list_item<T, inst> * item) { /* implement me */ }
 };
 
 /*
