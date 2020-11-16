@@ -57,7 +57,7 @@ Next, we populate the lists:
     hip_list.add( &foo.vip );
 
 Finally, we traverse the list and restore a pointer to `user_data` from 
-every list item. And we do it by using *just* a `list_item` pointer,
+every list item. We do this by using *just* a `list_item` pointer and
 nothing else:
 
     for (auto item = vip_list.first; item; item = item->next)
