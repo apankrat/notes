@@ -1,13 +1,15 @@
 # Even more human-friendly intrusive containers in C++
 
 This is a follow-up to the 
-[previous installment](https://github.com/apankrat/notes/tree/master/intrusive-containers/readme-v1.md)
-that showed how C-style "intrusive" containers can be adapted to C++,
+[original version](readme-v1.md)
+that demonstrated how C-style "intrusive" containers can be adapted to C++,
 adding compile-time protection against two types of mistakes, but 
 without going full C++ on the syntax.
 
-This (second) revision further reduces the boilerplate to a near-absolute
-minimum. Here's an example of how it looks:
+This "**even more** human-friendly" version reduces the boilerplate to a 
+near-absolute minimum.
+
+Here's an example of how it looks:
 
     /*
      *  Say we have our data structure and it needs 
@@ -56,7 +58,8 @@ Next, we populate the lists:
     hip_list.add( &foo.vip );
 
 Finally, we traverse the list and restore a pointer to `user_data` from 
-every list item. And we do it *unambiguously*:
+every list item. And we do it by using *just* a `list_item` pointer,
+nothing else:
 
     for (auto item = vip_list.first; item; item = item->next)
     {
