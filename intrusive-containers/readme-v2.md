@@ -24,8 +24,8 @@ Here's an example of how it looks:
 [macro](linked_list_v2.h#L47)
 that expands into a
 [templated class](linked_list_v2.h#L16)
-instance, creating under the hood two separate `list_item`
-types unrelated to each other.
+instance, creating under the hood two distinct `list_item`
+types, one for each field.
 
 Next, we instantiate two respective lists:
 
