@@ -20,11 +20,9 @@ Here's an example of how it looks:
         LIST_ITEM  hip;
     };
 
-`LIST_ITEM` here is a
-[macro](linked_list_v2.h#L47-L51)
-expanding into a
-[templated class](linked_list_v2.h#L16)
-instance. So under the hood this creates two distinct `list_item` types, one for each field.
+`LIST_ITEM` here is a [macro](linked_list_v2.h#L47-L51) expanding into a [templated class](linked_list_v2.h#L16)
+instance keyed by the source line number and creating two distinct `list_item` types, one for each field. It's 
+simpler than it sounds :)
 
 Next, we instantiate two respective lists:
 
