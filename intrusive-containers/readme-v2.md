@@ -21,11 +21,10 @@ Here's an example of how it looks:
     };
 
 `LIST_ITEM` here is a
-[macro](linked_list_v2.h#L47)
-that expands into a
+[macro](linked_list_v2.h#L47-L51)
+expanding into a
 [templated class](linked_list_v2.h#L16)
-instance, creating under the hood two distinct `list_item`
-types, one for each field.
+instance. So under the hood this creates two distinct `list_item` types, one for each field.
 
 Next, we instantiate two respective lists:
 
