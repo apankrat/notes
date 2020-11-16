@@ -67,12 +67,12 @@ nothing else:
     }
 
 This is *very* close in style and expressivity to the C version, but it 
-also has compile-time safe-guards against fat fingers. There's now no 
+also has compile-time safeguards against fat fingers. There's now no 
 way to chain data items by a wrong control field nor is it possible 
 to mess up the container_of() call when recovering `user_data` pointer
 from a pointer to `list_item`.
 
-# How it's done
+## How it's done
 
-See [linked_list_v2.h](linked_list_v2.h) and [linked_list_v2_example.cpp](linked_list_v2_example.cpp) for details.
+See [original post](readme-v1.md) for the idea and [linked_list_v2.h](linked_list_v2.h) / [linked_list_v2_example.cpp](linked_list_v2_example.cpp) for details.
 
