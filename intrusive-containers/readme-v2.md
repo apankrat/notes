@@ -1,7 +1,7 @@
 # Even more human-friendly intrusive containers in C++
 
 This is a follow-up to the [original post](readme-v1.md) that described how C-style "intrusive" containers 
-can be adapted to C++, adding compile-time protection against two types of mistakes, but without going full
+can be adapted to C++, adding compile-time protection against certain types of misuse, but without going full
 C++ on the syntax.
 
 This new, revised version takes it a step further and reduces requried boilerplate to a near-absolute minimum.
