@@ -1,13 +1,12 @@
 # Even more human-friendly intrusive containers in C++
 
-This is a follow-up to the 
-[original version](readme-v1.md)
-that demonstrated how C-style "intrusive" containers can be adapted to C++,
+The [original version](readme-v1.md)
+described how C-style "intrusive" containers can be adapted to C++,
 adding compile-time protection against two types of mistakes, but 
 without going full C++ on the syntax.
 
-This "**even more** human-friendly" version reduces the boilerplate to a 
-near-absolute minimum.
+This version takes it a bit further and reduces requried boilerplate 
+to a near-absolute minimum.
 
 Here's an example of how it looks:
 
@@ -21,9 +20,12 @@ Here's an example of how it looks:
         LIST_ITEM  hip;
     };
 
-`list_item` here is a macro expanding into a templated class instance,
-so under the hood this creates two separate list_item types unrelated
-to each other.
+`LIST_ITEM` here is a
+[macro](linked_list_v2.h#L47)
+that expands into a
+[templated class](linked_list_v2.h#L16)
+instance, creating under the hood two separate `list_item`
+types unrelated to each other.
 
 Next, we instantiate two respective lists:
 
@@ -75,7 +77,5 @@ from a pointer to `list_item`.
 
 # How it's done
 
-See [linked_list_v2.h](linked_list_v2.h) for the container sample.
-
-See [linked_list_v2_example.cpp](linked_list_v2_example.cpp) for the usage sample.
+See [linked_list_v2.h](linked_list_v2.h) and [linked_list_v2_example.cpp](linked_list_v2_example.cpp) for details.
 
