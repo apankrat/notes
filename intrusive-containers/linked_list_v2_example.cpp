@@ -7,13 +7,13 @@
 struct foo
 {
 	// boilerplate, required
-	__container_item(foo);
+	CONTAINER_ITEM(foo);
 
 	// members
 	int something;
 
-	list_item  vip;
-	list_item  hip;
+	LIST_ITEM  vip;
+	LIST_ITEM  hip;
 };
 
 CONTAINER_OF(foo, vip);
@@ -24,8 +24,8 @@ CONTAINER_OF(foo, hip);
  */
 void test()
 {
-	list_head(foo, vip)  vip_list;
-	list_head(foo, hip)  hip_list;
+	LIST_HEAD(foo, vip)  vip_list;
+	LIST_HEAD(foo, hip)  hip_list;
 
 	foo a, b;
 	foo * p;

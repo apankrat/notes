@@ -15,8 +15,8 @@ minimum. Here's an example of how it looks:
      */
     struct user_data
     {
-        list_item  vip;
-        list_item  hip;
+        LIST_ITEM  vip;
+        LIST_ITEM  hip;
     };
 
 `list_item` here is a macro expanding into a templated class instance,
@@ -29,12 +29,12 @@ Next, we instantiate two respective lists:
      *  'vip_list' is a head of the list that is chained together
      *  through user_data::vip fields, and through these fields only.
      */
-    list_head(user_data, vip)  vip_list;
+    LIST_HEAD(user_data, vip)  vip_list;
 
     /*
      *  'hip_list' is similar, but it uses user_data::hip instead.
      */
-    list_head(user_data, hip)  hip_list;
+    LIST_HEAD(user_data, hip)  hip_list;
 
 Next, we populate the lists:
 
