@@ -13,6 +13,9 @@ struct foo
 	LIST_ITEM  hip;
 };
 
+/*
+ *	instantiate container_of() for &foo::vip and &foo::hip
+ */
 CONTAINER_OF(foo, vip);
 CONTAINER_OF(foo, hip);
 

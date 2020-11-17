@@ -8,7 +8,7 @@
 #include <stddef.h>
 
 /* 
- *	linked list item
+ *	Linked list item
  */
 template <typename T, int inst>
 struct list_item
@@ -17,7 +17,7 @@ struct list_item
 };
 
 /*
- *	linked list head
+ *	Linked list head
  */
 template <typename T, int inst>
 struct list_head
@@ -28,47 +28,36 @@ struct list_head
 };
 
 /*
- *	Per-container boilerplate, not specific to 'list', covers:
+ *	The boilerplate:
  *
- *	1. Generating an unique 'item' type for the each 'cont_item' instance in 
- *	   a given struct.
- *	
- *	   #define __cont_item           __cont_item_1(__LINE__)
- *	   #define __cont_item_1(inst)   __cont_item_2(inst)
- *	   #define __cont_item_2(inst)   struct cont_inst_ ## id { }; \
- *	                                 cont_item<cont_inst_ ## id>
- *
- *	2. Recovering 'item' and 'head' types from the struct (T) that contains 
- *	   the head of a container as [field]
- *
- *	   template <typename T> auto template_arg(cont_item<T> &) -> T;
- *
- *	   #define __cont_head_type(T, field)  cont_head<decltype(template_arg(T::field))>
- *	   #define __cont_item_type(T, field)  cont_item<decltype(template_arg(T::field))>
- *
- *	3. Shorthand for cont_head, for consistency with cont_item
- *
- *	   #define __cont_head(T, field)  __cont_head_type(T, field)
- *
- *	4. CONTAINER_OF() instantiation for each container instance used
+ *	1. To generate an unique 'item' type for the each 'list_item' 
+ *	   instance in a holding struct.
  */
+#define LIST_ITEM          LIST_ITEM_1(__LINE__)
+#define LIST_ITEM_1(inst)  LIST_ITEM_2(inst)
+#define LIST_ITEM_2(inst)  struct list_inst_ ## id { }; \
+                           list_item<list_inst_ ## id>
 
-// 1.
-#define LIST_ITEM             LIST_ITEM_1(__LINE__)
-#define LIST_ITEM_1(inst)     LIST_ITEM_2(inst)
-#define LIST_ITEM_2(inst)     struct list_inst_ ## id { }; \
-                              list_item<list_inst_ ## id>
-
-// 2.
-template <typename T> auto template_arg(list_item<T> &) -> T;
+/*
+ *	2. To recover 'item' and 'head' types from a struct (T) that 
+ *	   contains the head of a container as its [field]
+ */
+template <typename T>
+auto template_arg(list_item<T> &) -> T;
 
 #define LIST_HEAD_TYPE(T, field)  list_head<decltype(template_arg(T::field))>
 #define LIST_ITEM_TYPE(T, field)  list_item<decltype(template_arg(T::field))>
 
-// 3.
-#define LIST_HEAD(T, field)   LIST_HEAD_TYPE(T, field)
+/*
+ *	3. Shorthand for LIST_HEAD, for consistency with LIST_ITEM
+ */
+#define LIST_HEAD(T, field)  LIST_HEAD_TYPE(T, field)
 
-// 4.
+/*
+ *	Finally, CONTAINER_OF() - a boilerplate macro that needs to
+ *	be instantiated for every container instance defined. It is
+ *	not list-specific. See sample code for details.
+ */
 #define CONTAINER_OF(T, field)                                      \
 	inline T * container_of(decltype(T::field) * item)          \
 	{                                                           \
