@@ -1,8 +1,8 @@
 /*
- *	https://github.com/apankrat/notes/blob/master/intrusive-containers
  *	C-style intrusive containers in C++
+ *	https://github.com/apankrat/notes/blob/master/intrusive-containers
  */
-#include "linked_list_v2.h"
+#include "linked_list.h"
 #include <assert.h>
 
 struct foo

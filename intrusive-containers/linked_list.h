@@ -1,9 +1,9 @@
 /*
- *	https://github.com/apankrat/notes/blob/master/intrusive-containers
  *	C-style intrusive containers in C++
+ *	https://github.com/apankrat/notes/blob/master/intrusive-containers
  */
-#ifndef _LINKED_LIST_V2_H_
-#define _LINKED_LIST_V2_H_
+#ifndef _LINKED_LIST_H_
+#define _LINKED_LIST_H_
 
 #include <stddef.h>
 
