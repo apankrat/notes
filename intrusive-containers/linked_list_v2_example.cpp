@@ -45,9 +45,9 @@ void test()
 	/*
 	 *	struct pointer recovery
 	 */
-	p = container_of(&a.vip_item);
+	p = container_of(&a.vip);
 	assert(p == &a);
 
-	p = container_of(&b.hip_item);
+	p = container_of(&b.hip);
 	assert(p == &b);
 }
