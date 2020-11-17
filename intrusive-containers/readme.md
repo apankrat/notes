@@ -195,7 +195,7 @@ on the `__LINE__` value:
                                list_item<list_inst_ ## id>
 
 Next, we define a couple of macros to "recover" the exact `list_item` 
-and `list_head` types based on the containing struct and the field name:
+and `list_head` types from the containing struct and the field name:
 
     template <typename T> auto template_arg(list_item<T> &) -> T;
 
