@@ -4,6 +4,11 @@ Intrusive containers is an implementation style of convential data storage struc
 (such as lists or trees) that embeds "stubs" of container-specific control data into
 user data structures and then uses these stubs to "weave" user data into a container.
 
+They are widely used in C code, including, for example, 
+[Linux](https://github.com/torvalds/linux/blob/master/include/linux/list.h), 
+[Windows](https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/singly-and-doubly-linked-lists) and 
+[BSD](https://www.freebsd.org/cgi/man.cgi?query=LIST_HEAD) kernels.
+
 ## C-style, in 4 steps
 
 1\. Define the container structure (the "head"):
@@ -13,14 +18,14 @@ user data structures and then uses these stubs to "weave" user data into a conta
         struct list_item * first;
     };
 
-2\. Define per-item data (the "item") that is used to place an item in a container:
+2\. Define per-item data (the "item") that is used to place an user data item in a container:
 
     struct list_item
     {
         struct list_item * next;
     };
     
-3\. Add an 'item' instance to the application data, one item for each container that 
+3\. Add an 'item' instance to the user data, one item for each container that 
 this data can be on:
 
     struct user_data
@@ -71,10 +76,12 @@ if we also provide it with the structure type and the field name.
 Adding items to a container requires no memory allocation. All required memory is effectively
 preallocated by embedding container control items into the user data.
 
-Items can be placed into multiple containers at once, e.g. they can added to multiple maps,
-each keyed by a different field of the user data.
+Items can be placed into multiple containers at once with all containers being on equal footing.
+For example, items may be added to a list, to a ring, to a stack and to multiple maps, each keyed
+by a different user data field, and with none of these containers having an "ownership" over the
+item.
 
-Item disposal and cleanup is greatly simplified, assuming the container supports removal by 
+Item disposal and cleanup can be greatly simplified, assuming the container supports removal by 
 control item as many of them do.
 
 ## Cons
@@ -208,8 +215,7 @@ type of `vip_item` in `user_data` will work out to be something like
     
 whereby 7 is the line number where `LIST_ITEM  hip_item;` lives.
 
-## Sample code
+## The code
 
-[linked_list.h](linked_list.h)
-
-[linked_list_example.cpp](linked_list_example.cpp)
+See [linked_list.h](linked_list.h) for the skeleton of a linked list container
+and [linked_list_example.cpp](linked_list_example.cpp) for its sample usage.
