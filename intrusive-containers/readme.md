@@ -119,7 +119,7 @@ strengthen it against common pitfalls, while keeping the syntax very
 close to the original C style.
 
 That is, the goal here is to make an improved version of C-style containers
-rather than to implement something genuienly C++ like what 
+rather than to implement something more C++-ized and similar to what 
 [Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
 
 The resulting code looks like this:
