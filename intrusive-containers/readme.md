@@ -217,9 +217,9 @@ for any container implemented along the same lines.
 Now, if we go  back to the example from the previous section, the exact
 type of `vip_item` in `user_data` will work out to something like 
 
-    user_data::list_item<list_inst_7>
+    user_data::list_item<list_inst_4>
     
-where 7 is the line number where `LIST_ITEM  vip_item;` is declared.
+where 4 is the line number where `LIST_ITEM  vip_item;` is declared.
 
 ## The code
 
