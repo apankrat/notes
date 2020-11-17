@@ -168,7 +168,7 @@ Note how `container_of` now needs just a pointer to a `list_item`. In fact:
 ## How it's done
 
 The idea is that we define a distinct `list_item` type for every `(user_data, field)`
-combination and we also provide a version of `container_of()` to go with it.
+combination and we also provide a version of `container_of()` to go with it. Like so:
 
     template <typename Instance>
     struct list_item
@@ -185,22 +185,16 @@ combination and we also provide a version of `container_of()` to go with it.
         list_item<list_inst_2>   hip_item;   
     };
 
-Needing to create an unique dummy type is a bit tiresome, so we wrap
-things into a macro that auto-generates all this for us based on 
-`__LINE__` value.
+Needing to create an unique dummy type for each field is a bit tiresome, 
+so we wrap things into a macro that auto-generates all this for us based 
+on the `__LINE__` value:
 
-Next, we provide a matching `container_of` version like so:
+    #define LIST_ITEM          LIST_ITEM_1(__LINE__)
+    #define LIST_ITEM_1(inst)  LIST_ITEM_2(inst)
+    #define LIST_ITEM_2(inst)  struct list_inst_ ## id { }; \
+                               list_item<list_inst_ ## id>
 
-    #define CONTAINER_OF(T, field)                               \
-        inline T * container_of(decltype(T::field) * item)       \
-        {                                                        \
-            return (T*)((char*)item - (int)offsetof(T, field));  \
-        }
-
-Note how this macro is not specific to `list_item` in any way and works 
-for any container implemented along the same lines.
-
-Finally, we define a couple of macros to "recover" the exact `list_item` 
+Next, we define a couple of macros to "recover" the exact `list_item` 
 and `list_head` types based on the containing struct and the field name:
 
     template <typename T> auto template_arg(list_item<T> &) -> T;
@@ -208,12 +202,24 @@ and `list_head` types based on the containing struct and the field name:
     #define LIST_HEAD_TYPE(T, field)  list_head<decltype(template_arg(T::field))>
     #define LIST_ITEM_TYPE(T, field)  list_item<decltype(template_arg(T::field))>
 
-Now, going back to the example from the previous section, the exact
-type of `vip_item` in `user_data` will work out to be something like 
+Finally, we provide a matching `container_of` version like so:
+
+    #define CONTAINER_OF(T, field)                               \
+        inline T * container_of(decltype(T::field) * item)       \
+        {                                                        \
+            return (T*)((char*)item - (int)offsetof(T, field));  \
+        }
+
+
+Note how this macro is not specific to `list_item` in any way and works 
+for any container implemented along the same lines.
+
+Now, if we go  back to the example from the previous section, the exact
+type of `vip_item` in `user_data` will work out to something like 
 
     user_data::list_item<list_inst_7>
     
-whereby 7 is the line number where `LIST_ITEM  hip_item;` lives.
+where 7 is the line number where `LIST_ITEM  vip_item;` is declared.
 
 ## The code
 
