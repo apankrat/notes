@@ -107,7 +107,7 @@ happily, no questions asked.
 ## The same, in C++
 
 Due to an inherent need for the `offsetof` macro, implementing C-style
-intrusive containers that work in all possible C++ cases is not possible.
+intrusive containers that work in *all* possible C++ scenarios is not possible.
 This has to do with various edge and UB cases including, for example,
 virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
