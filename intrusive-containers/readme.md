@@ -6,21 +6,21 @@ user data structures and then uses these stubs to "weave" user data into a conta
 
 ## C-style, in 4 steps
 
-1. Define the container structure (the "head"):
+1\. Define the container structure (the "head"):
 
     struct list_head
     {
         struct list_item * first;
     };
 
-2. Define per-item data (the "item") that is used to place an item in a container:
+2\. Define per-item data (the "item") that is used to place an item in a container:
 
     struct list_item
     {
         struct list_item * next;
     };
     
-3. Add an 'item' instance to the application data, one item for each container that 
+3\. Add an 'item' instance to the application data, one item for each container that 
 this data can be on:
 
     struct user_data
@@ -31,7 +31,7 @@ this data can be on:
         struct list_item  hop_item;
     }; 
     
-4. Use it:
+4\. Use it:
 
     struct user_data  foo, bar, baz;
     struct list_head  vip, hip, hop;
