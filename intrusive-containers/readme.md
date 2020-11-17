@@ -191,8 +191,8 @@ on the `__LINE__` value:
 
     #define LIST_ITEM          LIST_ITEM_1(__LINE__)
     #define LIST_ITEM_1(inst)  LIST_ITEM_2(inst)
-    #define LIST_ITEM_2(inst)  struct list_inst_ ## id { }; \
-                               list_item<list_inst_ ## id>
+    #define LIST_ITEM_2(inst)  struct list_inst_ ## inst { }; \
+                               list_item<list_inst_ ## inst>
 
 Next, we define a couple of macros to "recover" the exact `list_item` 
 and `list_head` types from the containing struct and the field name:
