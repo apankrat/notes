@@ -1,16 +1,13 @@
+/*
+ *	https://github.com/apankrat/notes/blob/master/intrusive-containers
+ *	C-style intrusive containers in C++
+ */
 #include "linked_list_v2.h"
 #include <assert.h>
 
-/*
- *
- */
 struct foo
 {
-	// boilerplate, required
-	CONTAINER_ITEM(foo);
-
-	// members
-	int something;
+	int  something;
 
 	LIST_ITEM  vip;
 	LIST_ITEM  hip;
@@ -19,24 +16,21 @@ struct foo
 CONTAINER_OF(foo, vip);
 CONTAINER_OF(foo, hip);
 
-/*
- *
- */
 void test()
 {
 	LIST_HEAD(foo, vip)  vip_list;
 	LIST_HEAD(foo, hip)  hip_list;
 
-	foo a, b;
-	foo * p;
+	foo  a, b;
+	foo  * p;
 
 	/*
-	 *	compiler-time checks
+	 *	compile-time checks
 	 */
-	vip_list.add(&a.vip);  // these will compile OK
+	vip_list.add(&a.vip);  // these will compile ...
 	hip_list.add(&a.hip);
 
-//	vip_list.add(&a.hip);  // .. and these will not
+//	vip_list.add(&a.hip);  // ... and these will not
 //	hip_list.add(&a.vip);
 
 	/*
