@@ -36,6 +36,7 @@ this data can be on:
     struct user_data  foo, bar, baz;
     struct list_head  vip, hip, hop;
     struct list_item * p;
+    struct user_data * u;
     
     ...
     
@@ -52,10 +53,7 @@ this data can be on:
     
     // traverse the 'vip' list
     for (p = vip.first; p; p = p->next)
-    {
-        struct user_data * u = container_of(p, struct user_data, vip_item);
-        ...
-    }
+        u = container_of(p, struct user_data, vip_item);
     
     ...
     
@@ -64,9 +62,8 @@ this data can be on:
     list_del(&bar.hip_item);
     list_del(&bar.hop_item);
     
-The magic ingredient that makes it all work is the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage) macro.
-
-Given a pointer to a structure *field* it returns a pointer to the structure itself
+The magic ingredient that makes it all work is the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage)
+macro. Given a pointer to a structure *field* it returns a pointer to the structure itself
 if we also provide it with the structure type and the field name.
 
 ## Pros
@@ -82,9 +79,9 @@ control item as many of them do.
 
 ## Cons
 
-The main drawback of intrusive containers is the risk of messing things up.
+The main drawback is the risk of fundamentally messing things up.
 
-One way to do it is with an accidental `container_of` misuse:
+One way to do it is with an incorrect `container_of` invocation:
 
     for (p = vip.first; p; p = p->next)             // traversing _vip_ list ...
         u = container_of(p, user_data, hip_item);   // ... but mistakenly recovering as a _hip_ list item
@@ -92,7 +89,7 @@ One way to do it is with an accidental `container_of` misuse:
 
 This will cause `u` to point at some random memory with all the consequences.
 
-Another way is to add an item to the wrong container of the same type:
+Another way is by adding an item to the wrong container of the same type:
 
     list_add(&bar.vip_item, &hip);  // should've been ".hip_item" ...
                                     // ... or "&vip"
@@ -105,12 +102,14 @@ happily, no questions asked.
 Due to an inherent need for the `offsetof` macro, implementing C-style
 intrusive containers that work in all possible C++ cases is not possible.
 This has to do with various edge and UB cases including, for example,
-virtual inheritance and such ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
+virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
-However for the C++ codebase that is already using C-style containers, 
-it is possible to rework the code in a way that would strengthen it 
-against common pitfalls, while keeping the syntax very close to the 
-original C style.
+That's in theory.
+
+In practice however for the C++ codebase that is already using C-style
+containers, it is possible to rework the code in a way that would 
+strengthen it against common pitfalls, while keeping the syntax very
+close to the original C style.
 
 That is, the goal here is to make an improved version of C-style containers
 rather than to implement something genuienly C++ like what 
