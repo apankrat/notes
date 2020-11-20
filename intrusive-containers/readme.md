@@ -33,13 +33,14 @@ this data can be on:
         ...
         struct list_item  vip_item;
         struct list_item  hip_item;
-        struct list_item  hop_item;
     }; 
     
 4\. Use it:
 
-    struct user_data  foo, bar, baz;
-    struct list_head  vip, hip, hop;
+    struct user_data  foo, bar;     // a couple of data items
+    struct list_head  vip;          // "vip" list
+    struct list_head  hip;          // "hip" list
+    
     struct list_item * p;
     struct user_data * u;
     
@@ -50,22 +51,14 @@ this data can be on:
 
     list_add(&bar.vip_item, &vip);  // bar -> 'vip' list
     list_add(&bar.hip_item, &hip);  // bar -> 'hip' list
-
-    list_add(&baz.vip_item, &vip);  // baz -> 'vip' list
-    list_add(&baz.hop_item, &hop);  // baz -> 'hop' list
-    
-    ...
     
     // traverse the 'vip' list
     for (p = vip.first; p; p = p->next)
         u = container_of(p, struct user_data, vip_item);
     
-    ...
-    
-    // remove 'bar' from all lists
+    // remove 'bar' from its lists
     list_del(&bar.vip_item);
     list_del(&bar.hip_item);
-    list_del(&bar.hop_item);
     
 The magic ingredient that makes it all work is the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage)
 macro. Given a pointer to a structure *field* it returns a pointer to the structure itself
@@ -111,16 +104,13 @@ intrusive containers that work in *all* possible C++ scenarios is not possible.
 This has to do with various edge and UB cases including, for example,
 virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
-That's in theory.
-
 In practice however for the C++ codebase that is already using C-style
-containers, it is possible to rework the code in a way that would 
-strengthen it against common pitfalls, while keeping the syntax very
-close to the original C style.
+containers, it is possible strengthen the code a bit to safeguard 
+common pitfalls, while keeping the syntax very close to the original C style.
 
-That is, the goal here is to make an improved version of C-style containers
-rather than to implement something more C++-ized and similar to what 
-[Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
+That is, the goal here is to make a better version of *C-style* containers
+rather than to implement something *C++-style* and similar, for example, to 
+what [Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
 
 The resulting code looks like this:
 
