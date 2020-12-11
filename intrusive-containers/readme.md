@@ -64,6 +64,10 @@ The magic ingredient that makes it all work is the [container_of](https://en.wik
 macro. Given a pointer to a structure *field* it returns a pointer to the structure itself
 if we also provide it with the structure type and the field name.
 
+\* PS. In the context of intrusive containers **container_of** is not the best name for this macro. 
+While technically correct (as it restores a pointer to a struct that *contains* the field), a less
+ambiguous name would be **struct_of**.
+
 ## Pros
 
 Adding items to a container requires no memory allocation. All required memory is effectively
@@ -105,7 +109,7 @@ This has to do with various edge and UB cases including, for example,
 virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
 In practice however for the C++ codebase that is already using C-style
-containers, it is possible strengthen the code a bit to safeguard 
+containers, it is possible to rework the code a bit to safeguard against
 common pitfalls, while keeping the syntax very close to the original C style.
 
 That is, the goal here is to make a better version of *C-style* containers
@@ -200,9 +204,8 @@ Finally, we provide a matching `container_of` version like so:
             return (T*)((char*)item - (int)offsetof(T, field));  \
         }
 
-
-Note how this macro is not specific to `list_item` in any way and works 
-for any container implemented along the same lines.
+Note how this macro is not specific to `list_item` and works just as
+fine for any container implemented along the same lines.
 
 Now, if we go  back to the example from the previous section, the exact
 type of `vip_item` in `user_data` will work out to something like 
