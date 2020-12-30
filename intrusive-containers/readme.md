@@ -61,14 +61,22 @@ this data can be on:
     list_del(&bar.hip_item);
     
 The magic ingredient that makes it all work is the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage)
-macro. Given a pointer to a structure *field* it returns a pointer to the structure itself
-if we also provide it with the structure type and the field name.
+macro. Given a pointer to a structure *field* it returns a pointer to the structure 
+itself if we also provide it with the structure type and the field name.
 
-\* PS. In the context of intrusive containers **container_of** is not the best name for this macro. 
-While technically correct (as it restores a pointer to a struct that *contains* the field), a less
-ambiguous name would be **struct_of**.
+## container_of
 
-## Pros
+In the context of intrusive containers **container_of** is not the best name for this macro. 
+It comes from the Linux kernel codebase and while technically correct (as it restores a pointer to
+a struct that *contains* the field), a less ambiguous name would be **struct_of**.
+
+Alternatively, FreeBSD and Windows kernels call it **CONTAINING_RECORD**, which is also
+better, but a bit too mouthful.
+
+With this caveat in mind and for the consistency sake the rest of the Readme will stick 
+to `container_of`.
+
+## Pros of intrusive containers
 
 Adding items to a container requires no memory allocation. All required memory is effectively
 preallocated by embedding container control items into the user data.
@@ -81,7 +89,7 @@ item.
 Item disposal and cleanup can be greatly simplified, assuming the container supports removal by 
 control item as many of them do.
 
-## Cons
+## Cons of intrusive containers
 
 The main drawback is the risk of fundamentally messing things up.
 
@@ -103,16 +111,16 @@ happily, no questions asked.
 
 ## The same, in C++
 
-Due to an inherent need for the `offsetof` macro, implementing C-style
-intrusive containers that work in *all* possible C++ scenarios is not possible.
-This has to do with various edge and UB cases including, for example,
-virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
+When going from C to C++, the first thing to note is that it's not possible
+to implement `offsetof`-based instrusive containers that will work in *all*
+possible cases. This has to do with various edge and UB cases including, for 
+example, virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
-In practice however for the C++ codebase that is already using C-style
-containers, it is possible to rework the code a bit to safeguard against
-common pitfalls, while keeping the syntax very close to the original C style.
+However, for the C++ codebase that is already using C-style containers, it *is* 
+possible to rework the code to safeguard against common pitfalls, while keeping 
+the syntax very close to the original C style.
 
-That is, the goal here is to make a better version of *C-style* containers
+That is, **the goal** here is to make a better version of *C-style* containers
 rather than to implement something *C++-style* and similar, for example, to 
 what [Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
 
