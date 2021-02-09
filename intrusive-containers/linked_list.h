@@ -35,8 +35,8 @@ struct list_head
  */
 #define LIST_ITEM          LIST_ITEM_1(__LINE__)
 #define LIST_ITEM_1(inst)  LIST_ITEM_2(inst)
-#define LIST_ITEM_2(inst)  struct list_inst_ ## id { }; \
-                           list_item<list_inst_ ## id>
+#define LIST_ITEM_2(inst)  struct list_inst_ ## inst { }; \
+                           list_item<list_inst_ ## inst>
 
 /*
  *	2. To recover 'item' and 'head' types from a struct (T) that 

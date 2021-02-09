@@ -33,13 +33,14 @@ this data can be on:
         ...
         struct list_item  vip_item;
         struct list_item  hip_item;
-        struct list_item  hop_item;
     }; 
     
 4\. Use it:
 
-    struct user_data  foo, bar, baz;
-    struct list_head  vip, hip, hop;
+    struct user_data  foo, bar;     // a couple of data items
+    struct list_head  vip;          // "vip" list
+    struct list_head  hip;          // "hip" list
+    
     struct list_item * p;
     struct user_data * u;
     
@@ -50,28 +51,32 @@ this data can be on:
 
     list_add(&bar.vip_item, &vip);  // bar -> 'vip' list
     list_add(&bar.hip_item, &hip);  // bar -> 'hip' list
-
-    list_add(&baz.vip_item, &vip);  // baz -> 'vip' list
-    list_add(&baz.hop_item, &hop);  // baz -> 'hop' list
-    
-    ...
     
     // traverse the 'vip' list
     for (p = vip.first; p; p = p->next)
         u = container_of(p, struct user_data, vip_item);
     
-    ...
-    
-    // remove 'bar' from all lists
+    // remove 'bar' from its lists
     list_del(&bar.vip_item);
     list_del(&bar.hip_item);
-    list_del(&bar.hop_item);
     
 The magic ingredient that makes it all work is the [container_of](https://en.wikipedia.org/wiki/Offsetof#Usage)
-macro. Given a pointer to a structure *field* it returns a pointer to the structure itself
-if we also provide it with the structure type and the field name.
+macro. Given a pointer to a structure *field* it returns a pointer to the structure 
+itself if we also provide it with the structure type and the field name.
 
-## Pros
+## container_of
+
+In the context of intrusive containers **container_of** is not the best name for this macro. 
+It comes from the Linux kernel codebase and while technically correct (as it restores a pointer to
+a struct that *contains* the field), a less ambiguous name would be **struct_of**.
+
+Alternatively, FreeBSD and Windows kernels call it **CONTAINING_RECORD**, which is also
+better, but a bit too mouthful.
+
+With this caveat in mind and for the consistency sake the rest of the Readme will stick 
+to `container_of`.
+
+## Pros of intrusive containers
 
 Adding items to a container requires no memory allocation. All required memory is effectively
 preallocated by embedding container control items into the user data.
@@ -84,7 +89,7 @@ item.
 Item disposal and cleanup can be greatly simplified, assuming the container supports removal by 
 control item as many of them do.
 
-## Cons
+## Cons of intrusive containers
 
 The main drawback is the risk of fundamentally messing things up.
 
@@ -106,21 +111,18 @@ happily, no questions asked.
 
 ## The same, in C++
 
-Due to an inherent need for the `offsetof` macro, implementing C-style
-intrusive containers that work in *all* possible C++ scenarios is not possible.
-This has to do with various edge and UB cases including, for example,
-virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
+When going from C to C++, the first thing to note is that it's not possible
+to implement `offsetof`-based instrusive containers that will work in *all*
+possible cases. This has to do with various edge and UB cases including, for 
+example, virtual inheritance ([link](https://en.wikipedia.org/wiki/Offsetof#Limitations)).
 
-That's in theory.
+However, for the C++ codebase that is already using C-style containers, it *is* 
+possible to rework the code to safeguard against common pitfalls, while keeping 
+the syntax very close to the original C style.
 
-In practice however for the C++ codebase that is already using C-style
-containers, it is possible to rework the code in a way that would 
-strengthen it against common pitfalls, while keeping the syntax very
-close to the original C style.
-
-That is, the goal here is to make an improved version of C-style containers
-rather than to implement something more C++-ized and similar to what 
-[Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
+That is, **the goal** here is to make a better version of *C-style* containers
+rather than to implement something *C++-style* and similar, for example, to 
+what [Boost has](https://www.boost.org/doc/libs/1_64_0/doc/html/intrusive.html).
 
 The resulting code looks like this:
 
@@ -191,8 +193,8 @@ on the `__LINE__` value:
 
     #define LIST_ITEM          LIST_ITEM_1(__LINE__)
     #define LIST_ITEM_1(inst)  LIST_ITEM_2(inst)
-    #define LIST_ITEM_2(inst)  struct list_inst_ ## id { }; \
-                               list_item<list_inst_ ## id>
+    #define LIST_ITEM_2(inst)  struct list_inst_ ## inst { }; \
+                               list_item<list_inst_ ## inst>
 
 Next, we define a couple of macros to "recover" the exact `list_item` 
 and `list_head` types from the containing struct and the field name:
@@ -210,9 +212,8 @@ Finally, we provide a matching `container_of` version like so:
             return (T*)((char*)item - (int)offsetof(T, field));  \
         }
 
-
-Note how this macro is not specific to `list_item` in any way and works 
-for any container implemented along the same lines.
+Note how this macro is not specific to `list_item` and works just as
+fine for any container implemented along the same lines.
 
 Now, if we go  back to the example from the previous section, the exact
 type of `vip_item` in `user_data` will work out to something like 
