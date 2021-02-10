@@ -359,26 +359,28 @@ reject shifts that aren't worthy of detailed testing.
 
     // uint16_t a[BLOCK_SIZE]; -- leading block
     // uint16_t b[BLOCK_SIZE]; -- trailing block
-    
+
     size_t max_overlap = 0;
+
     uint64_t sum_a = 0;
     uint64_t sum_b = 0;
 
-	for (size_t shift = 1; shift+1 < BLOCK_SIZE; shift++)
-	{
-		sum_a += a[BLOCK_SIZE-shift];
+    for (size_t shift = 1; shift+1 < BLOCK_SIZE; shift++)
+    {
+        sum_a += a[BLOCK_SIZE-shift];
         sum_b += b[shift-1];
-		if (sum_a != sum_b)
-		    continue;
 
-		uint16_t diff = 0;
+        if (sum_a != sum_b)
+            continue;
 
-		for (size_t j = 0; j < shift; j++)
-		    diff |= a[BLOCK_SIZE-shift+j] - b[j];
+        uint16_t diff = 0;
 
-		if (! diff)
-		    max_overlap = shift;
-	}
+        for (size_t j = 0; j < shift; j++)
+            diff |= a[BLOCK_SIZE-shift+j] - b[j];
+
+        if (! diff)
+            max_overlap = shift;
+    }
     
 The inner loop can also be vectorized if needed.
 
