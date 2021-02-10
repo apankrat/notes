@@ -257,11 +257,132 @@ So here's what's going on:
     
    But wait, we can still do a bit better!
     
- ## Different block sizes
- 
-One thing to try is to play with the block sizes and counts.
-...
+# Table compression, revised
 
+## Smaller block sizes
  
+Instead of splitting the original 65536 set into 256 x 256 blocks we 
+can try different block sizes.
+
+Using larger block sizes will reduce the size of the index, but it
+will also cause greater %-age of blocks to contain at least one 
+non-zero entry.
+
+The potential for block overlap (as per #4 above) will also increase
+for any given pair of blocks, but the number of pairs themselves will 
+be smaller.
+
+    Block size  |  Used blocks  |  Data size  |  Overlap  |  Table size
+                                                                       
+       1024     x       10      =    10240    -   1947    =    8293    
+        512     x       13      =     6656    -   1311    =    5345    
+        256     x       18      =     4608    -    742    =    3866       <- the original split
+        128     x       28      =     3584    -    533    =    3051    
+         64     x       44      =     2816    -    582    =    2234    
+         32     x       55      =     1760    -    337    =    1423    
+         16     x       66      =     1056    -    189    =     867    
+
+The last columns is the number of items in the table. But let's not 
+forget the index:
+
+      Block size  |  Index size  |  Table size  |  Total size
+                     
+         1024             64           8293           8357
+          512            128           5345           5473
+          256            256           3866           4122       <-  the original
+          128            512           3051           3563
+           64           1024           2234           3258       <-  the smallest
+           32           2048           1423           3471
+           16           4096            867           4963
  
+ That is, reducing the block size to 64 bytes we can compress the
+ table down to 3258 items (**6516 bytes**). This is 21% reduction
+ compared to the original of 4122 (or 8244 bytes).
  
+ The conversion function itself will look like so:
+ 
+     ...
+     return ch + casemap_lower[casemap_lower[ch >> 6] + (ch & 0x3f)];
+ 
+## Separate index
+
+The table size can be reduced a bit more by noticing that we have 
+only 44 unique index entries, a number that fits into `uint8_t`.
+
+So instead of -
+
+    uint16_t  index[1024] = { ... };
+    uint16_t  offset = index[ ch >> 6 ];
+    
+    ch = table[offset + (ch & 0x3f)];
+    
+we can use double-indexing like so:
+
+    uint8_t   index[1024] = { ... };
+    uint16_t  offsets[44] = { ... };
+    uint16_t  offset = offsets[ index[ ch >> 6 ] ];
+    
+    ch = table[offset + (ch & 0x3f) ];
+    
+This adds 3rd memory reference, but it also reduces the overall size
+of the table to **5580 bytes** (1024 + 2 x 44 + 2 x 2234).
+
+## Better block sequence
+
+Finally, we can try and shuffle blocks around to see if we can find
+a combination that results in a better cumulative overlap.
+
+We can also try and match not just *zero-filled* common parts, but
+any arbitrary-filled footers and headers. That is if one block ends
+with 
+
+    2222 2222 2222 2222
+    1111 1111 1111 1111    
+    0000 0000 0000 0000
+    
+and another starts with 
+
+    1111 1111 1111 1111
+    0000 0000 0000 0000
+    1111 1111 1111 1111
+    
+then we'll pick up a two-line overlap rather than none.
+
+### Implementation
+
+Testing all possible block permutations is computationally 
+prohibitive, so we need to resort to randomized shuffling.
+
+Maximum overlap between two blocks can be calculated fairly 
+efficiently by using a running checksum algorithm to quickly
+reject shifts that aren't worthy of detailed testing.
+
+    // uint16_t a[BLOCK_SIZE]; -- leading block
+    // uint16_t b[BLOCK_SIZE]; -- trailing block
+    
+    size_t max_overlap = 0;
+    uint64_t sum_a = 0;
+    uint64_t sum_b = 0;
+
+	for (size_t shift = 1; shift+1 < BLOCK_SIZE; shift++)
+	{
+		sum_a += a[BLOCK_SIZE-shift];
+        sum_b += b[shift-1];
+		if (sum_a != sum_b)
+		    continue;
+
+		uint16_t diff = 0;
+
+		for (size_t j = 0; j < shift; j++)
+		    diff |= a[BLOCK_SIZE-shift+j] - b[j];
+
+		if (! diff)
+		    max_overlap = shift;
+	}
+    
+The inner loop can also be vectorized if needed.
+
+### Results
+
+
+
