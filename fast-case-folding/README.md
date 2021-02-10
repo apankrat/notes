@@ -1,0 +1,267 @@
+# Fast string case conversion
+
+Converting strings and characters between lower and upper cases is a very 
+common need.
+
+In particular, case-insensitive string comparision is usually implemented 
+this way - a comparison that often occurs on the program's fast paths as 
+a part of data container lookups and content manipulation.
+
+So it is usually desirable to make case conversions (and, by extension,
+case-insensitive comparision) as fast as possible.
+
+## Lookup tables
+
+The simplest way to do this is with a lookup table. This is also the fastest way:
+
+    const char to_lower[256] = { ... };
+    const char to_upper[256] = { ... };
+  
+    char a = to_lower[ 'A' ];
+    char Z = to_upper[ 'z' ];
+    ...
+
+The cost of speed is the space needed to hold the lookup tables. If we
+are working with the 7-bit ASCII set, the tables will take 512 bytes.
+
+These can be allocated and initialized statically (and therefore stored
+in the executable binary) or they can be created at run-time. This is
+doable because the coversion rules are trivial:
+
+    if ('A' <= ch && ch <= 'Z') ch += 'a' - 'A'; // to lower
+    if ('a' <= ch && ch <= 'z') ch += 'A' - 'a'; // to upper
+
+In fact, for this case the benefits of using a lookup table are marginal 
+at best. The above `if` construct could work just as well.
+
+## 8-bit ASCII
+
+Case conversion for an 8-bit ASCII set depends on the 
+[locale](https://en.wikipedia.org/wiki/Locale_(computer_software))
+used.
+
+In terms of speeding things up the same applies as before - either
+hardcode static conversion table for each locale of interest, or
+code the conversion rules and then initialize the lookup tables at
+run-time.
+
+## Unicode
+
+Unicode is where it gets complicated.
+
+At the time of writing the [Unicode Standard](http://www.unicode.org/versions/latest/) 
+is at its 13th revision. The principle list of characters is [UnicodeData.txt](https://www.unicode.org/Public/13.0.0/ucd/UnicodeData.txt)
+with its format described [here](http://www.unicode.org/L2/L1999/UnicodeData.html).
+The executive summary of this fascinating read is this:
+
+* There are around 1400 characters with lower/upper cases
+* Some have more than one lower/upper case
+* Some use multiple characters for one case and a single character for another
+
+For the purpose of this post we are going to ignore #2 and #3 and 
+focus on characters that covert one-to-one between their cases.
+
+We will also focus on conversion of characters from
+`0x0000 - 0xD7FF` and `0xE000 - 0xFFFF` ranges, i.e. those that 
+encode as a single 16-bit word under
+[UTF-16](https://en.wikipedia.org/wiki/UTF-16) encoding.
+
+## Unicode, continued
+
+A lookup table for the UTF-16 case requires 2 x 65536 bytes per
+case, 256KB in total. Both tables will also be *very* sparse with
+just 2% of a non-trivial fill.
+
+This which brings us to the **interesting part** - how can we 
+compress these conversion tables without sacrificing the speed 
+of lookups?
+
+One of the best answers can be found in 
+[unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
+coming from the [Wine](https://winehq.org) project.
+
+Pared down a bit it looks like this -
+
+    wchar_t tolower(wchar_t ch)
+    {
+        extern const wchar_t casemap_lower[];
+        return ch + casemap_lower[casemap_lower[ch >> 8] + (ch & 0xff)];
+    }
+
+Two bit operations, two additions and two memory references.
+
+The `casemap_lower` table lives in
+[casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
+and it is quite incredibly just a bit over 8KB is size:
+
+    const wchar_t wine_casemap_lower[4122] = { ... }
+
+This is easily one of more elegant pieces of code I've seen in recent years. 
+
+Small, fast and very clever. Here's how it works.
+
+## Table compression
+
+Both `tolower` and `toupper` tables are compressed the same way, so
+we'll just look at the compression of the former.
+
+There are 1158 conversion rules and they are listed [here](to-lower-table.txt).
+
+So here's what's going on:
+
+1. The first insight is to store **deltas** between the lower and 
+   upper case codes rather than their absolute values.
+  
+   That is, we do `ch += lookup[...]` instead of `ch = lookup[...]`.
+   
+   This causes the table to contain 0s for all non-caseable
+   characters, creating *lots* of redundancy and making it far 
+   easier to compress.
+
+2. Next, the full set of possible `wchar_t` values - all 65536 of
+   them - is split into 256 blocks, 256 characters each. Entries 
+   for values starting with 00xx (in hex) go into the first block, 
+   01xx - into the second, etc.
+   
+       block 00 - [256 deltas for values 0000 to 00FF]
+       block 01 - [256 deltas for values 0100 to 01FF]
+        ...
+       block FF - [256 deltas for values FF00 to FFFF]
+    
+3. Once this is done, we notice that only 17 blocks have something 
+   else but zeroes - 
+   
+       00, 01, 02, 03, 04, 05, 10, 13, 1C, 1E, 1F, 21, 24, 2C, A6, A7, FF
+   
+   Remaining 239 blocks will be all zeroes.
+   
+   So we can store just these 17 blocks plus a zero-filled block and 
+   then use an *index*  to map block ID to its entry in the table:
+   
+       Index                     |   Table
+       --------------------------+-------------------------------------------
+       block     offset          |   offset    data
+       00xx  ->  0000            |   0000      [... 256 deltas ...]
+       01xx  ->  0100            |   0100      [... 256 deltas ...]
+       ...                       |   0200      [... 256 deltas ...] 
+       05xx  ->  0500            |   ...
+       06xx  ->  1200 (zeroes)   |   1100      [... 256 deltas ...] 
+       07xx  ->  1200 (zeroes)   |   1200      [ 0 0 0 0 0 0 0 ...]  (zeroes)
+       ...                       |
+       FExx  ->  1200 (zeroes)   |
+       FFxx  ->  1100            |
+
+    This compresses table down to 4608 items (18 x 256) + the size 
+    of the index. This is already excellent - around 10K instead 
+    of 128K - but it can be compressed further.
+    
+ 4. Another insight is that remaining blocks still contain a lot
+    of zeroes. More specifically, one block may *end* with lots 
+    of zeroes and the next onemay *start* with a lot of them.
+    
+    Here's, for example, the end of the 0200 block -
+    
+        ...
+        0248 | 0001 0000 0001 0000 0001 0000 0001 0000  <- last non-zeros
+        0250 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0258 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0260 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0268 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0270 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0278 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0280 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0288 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0290 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0298 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02a0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02a8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02b0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02b8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02c0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02c8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02d0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02d8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02e0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02e8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02f0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02f8 | 0000 0000 0000 0000 0000 0000 0000 0000
+       
+    And here's the start of the 0300 one -
+    
+        0300 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0308 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0310 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0318 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0320 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0328 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0330 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0338 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0340 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0348 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0350 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0358 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0360 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0368 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0370 | 0001 0000 0001 0000 0000 0000 0001 0000  <- first non-zeros
+        ...
+ 
+    So the 0300 block can be "pulled up" to overlap with
+    the 0200 block and its index entry adjusted to match.
+    Like so -
+    
+        ...
+        0248 | 0001 0000 0001 0000 0001 0000 0001 0000
+        0250 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0258 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0260 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0268 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0270 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0278 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0280 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0288 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0290 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0300
+        0298 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0308 
+        02a0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0310 
+        02a8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0318 
+        02b0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0320 
+        02b8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0328 
+        02c0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0330 
+        02c8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0338 
+        02d0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0340 
+        02d8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0348 
+        02e0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0350 
+        02e8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0358 
+        02f0 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0360 
+        02f8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0368 
+             | 0001 0000 0001 0000 0000 0000 0001 0000 | 0370 
+                                                        ...
+      This little maneuver reduces our table by 112 entries (14 rows x 8),
+      and that's just for these two blocks.
+   
+5. Finally, the index and the table are merged into a single array.
+    
+   The `casemap_lower[]` from the Wine's code comprises two separate parts 
+   - it starts with 256 entries of the index, followed by the actual blocks 
+   with deltas.
+    
+   Going back to the `towlower()` code -
+    
+        ...
+        return ch + casemap_lower[casemap_lower[ch >> 8] + (ch & 0xff)];
+    
+   `casemap_lower[ch >> 8]` is the index lookup which points at the block's 
+   start in the data section, followed by the retrieval of ch's delta value 
+   within the block at the offset of `ch & 0xff`.
+ 
+   Marvelous, isn't it?
+    
+   But wait, we can still do a bit better!
+    
+ ## Different block sizes
+ 
+One thing to try is to play with the block sizes and counts.
+...
+
+ 
+ 
+ 
