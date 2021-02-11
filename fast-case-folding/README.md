@@ -390,6 +390,12 @@ compression technique.
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
-table of between 4KB to 8KB in size.
+table of between 5KB to 8KB in size.
 
-The 4KB version is here - 
+The 8KB version, courtesy of Wine:
+* [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
+* [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
+
+The 5KB version, with better table compression:
+* x
+* z
