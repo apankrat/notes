@@ -11,7 +11,7 @@ So it is usually desirable to make case conversions (and, by extension,
 case-insensitive comparisions) as fast as possible.
 
 In this post we are going to look at one of the options - very fast 
-case conversion using **compressed lookup tables**. An excellent 
+case conversion using **compressed lookup tables**, an excellent 
 example of the
 [space-time tradeoff](https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff)
 technique.
