@@ -346,7 +346,7 @@ Here are the results:
          32        337  ->   339     3471  ->  3469
          16        189  ->   189     4963  ->  4963       <-  no change
 
-That is, block reshuffling can reduce the original Wine's
+That is, block reshuffling can reduce the original Wine
 table from **4122** to **3668** items.
 
 Combined with a smaller block size the reshuffling can
@@ -382,7 +382,7 @@ When applied, this change yields the following total byte counts:
 ## In other words
 
 If we are willing to add an extra memory reference to every case
-conversion, we can reduce the original Wine's table size of 
+conversion, we can shrink the original Wine table of 
 **8244 bytes** down to **5000 bytes**, a reduction of ~ **40%**.
 
 If we prefer to stick to the original lookup code, we can still
