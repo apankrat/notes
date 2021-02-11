@@ -295,29 +295,29 @@ be smaller.
 
     Block size  |  Used blocks  |  Data size  |  Overlap  |  Table size
                                                                        
-       1024     x       10      =    10240    -   1947    =    8293    
-        512     x       13      =     6656    -   1311    =    5345    
+       1024     x       10      =    10240    -   1757    =    8483    
+        512     x       13      =     6656    -   1101    =    5555    
         256     x       18      =     4608    -    742    =    3866       <- the original split
-        128     x       28      =     3584    -    533    =    3051    
-         64     x       44      =     2816    -    582    =    2234    
-         32     x       55      =     1760    -    337    =    1423    
-         16     x       66      =     1056    -    189    =     867    
+        128     x       28      =     3584    -    539    =    3045    
+         64     x       44      =     2816    -    578    =    2238    
+         32     x       55      =     1760    -    345    =    1415    
+         16     x       66      =     1056    -    187    =     869    
 
 The last columns is the number of items in the table. But let's not 
 forget the index:
 
     Block size  |  Index size  |  Table size  |  Total size
                      
-       1024             64           8293           8357
-        512            128           5345           5473
-        256            256           3866           4122       <-  the original
-        128            512           3051           3563
-         64           1024           2234           3258       <-  the smallest
-         32           2048           1423           3471
-         16           4096            867           4963
+       1024             64     +     8483     =     8547
+        512            128     +     5555     =     5683
+        256            256     +     3866     =     4122       <-  the original
+        128            512     +     3045     =     3557
+         64           1024     +     2238     =     3262       <-  the smallest
+         32           2048     +     1415     =     3463
+         16           4096     +      869     =     4965
  
  That is, reducing the block size to 64 bytes we can compress the
- table down to 3258 items (**6516 bytes**). This is 21% reduction
+ table down to 3262 items (**6516 bytes**). This is 21% reduction
  compared to the original of 4122 (or 8244 bytes).
  
  The conversion function itself will look like so:
@@ -329,7 +329,7 @@ forget the index:
 
 In addition to finding the best spot for the zero-filled
 block, we can try and shuffle **all** blocks around and
-search for the most squishable combination.
+look for the most squishable combination.
 
 I suspect that there is a better than O(n!) way to do it,
 but being the lazy optimizators that we are, we will just
@@ -337,13 +337,15 @@ resort to randomized shuffling and an overnight test run.
 
 Here are the results:
 
-    Block size  |     Overlap     |    Total size
+    Block size  |     Overlap     |     Total size
 
-        256        742  ->  1196     4122  ->  3668
-        128        533  ->   870     3563  ->  3226       <-  the smallest
-         64        582  ->   596     3258  ->  3244       
-         32        337  ->   339     3471  ->  3469
-         16        189  ->   189     4963  ->  4963       <-  no change
+       1024        1757  -> xxxx      8547  ->  xxxx
+        512        1101  -> xxxx      5683  ->  xxxx
+        256         742  ->  xxx      4122  ->  xxxx
+        128         539  ->  xxx      3557  ->  xxxx   <-  the smallest
+         64         578  ->  xxx      3262  ->  xxxx   
+         32         345  ->  xxx      3463  ->  xxxx
+         16         187  ->  xxx      4965  ->  xxxx   <-  no change
 
 That is, block reshuffling can reduce the original Wine
 table from **4122** to **3668** items.
