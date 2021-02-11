@@ -10,6 +10,8 @@ a part of data container lookups and content manipulation.
 So it is usually desirable to make case conversions (and, by extension,
 case-insensitive comparision) as fast as possible.
 
+If in rush, you can jump straight to the [Conclusion](#Conclusion).
+
 ## Lookup tables
 
 The simplest way to do this is with a lookup table. This is also the fastest way:
@@ -367,5 +369,22 @@ When applied, this change yields the following total byte counts:
        128           512    +    28 x 2     +   2714 x 2   =     5996
         64          1024    +    44 x 2     +   2220 x 2   =     5552
         32          2048    +    55 x 2     +   1421 x 2   =     5000       <-  chicken dinner
-	    16          4096    +    66 x 2     +    867 x 2   =     5962
+        16          4096    +    66 x 2     +    867 x 2   =     5962
 
+## In other words
+
+If we are willing to add an extra memory reference to every case
+conversion, we can reduce the original Wine's table size of 
+**8244 bytes** down to **5000 bytes** even, a reduction of ~ **40%**.
+
+If we prefer to stick to the original lookup code, we can still
+reduce the table size to **6452 bytes**, a reduction of ~ **22%**.
+
+Either way this is just a cherry on top of an already excellent
+compression technique.
+
+# Conclusion
+
+Very fast case conversion of (the vast majority of) Unicode characters
+can be implemented in a handful of CPU cycles and a precomputed lookup
+table of between 4KB to 8KB in size.
