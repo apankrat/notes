@@ -1,4 +1,4 @@
-# Fast string case conversion
+# Fast character case conversion
 
 Converting strings and characters between lower and upper cases is a very 
 common need.
@@ -8,7 +8,13 @@ this way - a comparison that often occurs on the program's fast paths as
 a part of data container lookups and content manipulation.
 
 So it is usually desirable to make case conversions (and, by extension,
-case-insensitive comparision) as fast as possible.
+case-insensitive comparisions) as fast as possible.
+
+In this post we are going to look at one of the options - very fast 
+case conversion using **compressed lookup tables**. An excellent 
+example of the
+[space-time tradeoff](https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff)
+technique.
 
 If in rush, you can jump straight to the [Conclusion](#Conclusion).
 
@@ -71,16 +77,16 @@ encode as a single 16-bit word under
 ## Unicode, continued
 
 A lookup table for the UTF-16 case requires 2 x 65536 bytes per
-case, 256KB in total. Both tables will also be *very* sparse with
-just 2% of a non-trivial fill.
+case, 256KB in total.
 
-This which brings us to the **interesting part** - how can we 
-compress these conversion tables without sacrificing the speed 
-of lookups?
+Both tables will also be *very* sparse with just 2% of a non-trivial fill.
 
-One of the best answers can be found in 
-[unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
-coming from the [Wine](https://winehq.org) project.
+Which brings us to the **interesting part** - how can we compress these
+tables without sacrificing the speed of lookups?
+
+One of the answers can be found in the [Wine](https://winehq.org) project
+or, more specifically, in its
+[unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93).
 
 Pared down a bit it looks like this -
 
@@ -94,13 +100,13 @@ Two bit operations, two additions and two memory references.
 
 The `casemap_lower` table lives in
 [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
-and it is quite incredibly just a bit over 8KB is size:
+and it is quite incredibly just 8KB is size:
 
     const wchar_t wine_casemap_lower[4122] = { ... }
 
-This is easily one of more elegant pieces of code I've seen in recent years. 
+This is easily one of more elegant pieces of code I've seen in a long while. 
 
-Small, fast and very clever. Here's how it works.
+Very fast, beautifully terse and, at the first glance, mysterious. Here's how it works.
 
 ## Table compression
 
@@ -116,9 +122,8 @@ So here's what's going on:
   
    That is, we do `ch += lookup[...]` instead of `ch = lookup[...]`.
    
-   This causes the table to contain 0s for all non-caseable
-   characters, creating *lots* of redundancy and making it far 
-   easier to compress.
+   This fills the table with 0s for all non-caseable characters, 
+   creating *lots* of redundancy and making it way easier to compress.
 
 2. Next, the full set of possible `wchar_t` values - all 65536 of
    them - is split into 256 blocks, 256 characters each. Entries 
@@ -130,12 +135,12 @@ So here's what's going on:
         ...
        block FF - [256 deltas for values FF00 to FFFF]
     
-3. Once this is done, we notice that only 17 blocks have something 
-   else but zeroes - 
+3. Once this is done, we notice that only 17 blocks are **not** 
+   completely zero-filled - 
    
        00, 01, 02, 03, 04, 05, 10, 13, 1C, 1E, 1F, 21, 24, 2C, A6, A7, FF
    
-   Remaining 239 blocks will be all zeroes.
+   Remaining 239 blocks will be all full of zeroes.
    
    So we can store just these 17 blocks plus a zero-filled block and 
    then use an *index*  to map block ID to its entry in the table:
