@@ -267,11 +267,14 @@ So here's what's going on:
    start in the data section, followed by the retrieval of ch's delta value 
    within the block at the offset of `ch & 0xff`.
  
-   Bloody marvelous, isn't it?
-    
-   But wait! We can take it a bit further.
-    
+Marvelous, isn't it?
+
+If you know the origins of this technique (or its author!), let me know
+and I'll add a proper reference.
+   
 # Table compression, revised
+
+But wait! We can take it a bit further.
 
 ## Smaller block sizes
  
@@ -375,7 +378,7 @@ When applied, this change yields the following total byte counts:
 
 If we are willing to add an extra memory reference to every case
 conversion, we can reduce the original Wine's table size of 
-**8244 bytes** down to **5000 bytes** even, a reduction of ~ **40%**.
+**8244 bytes** down to **5000 bytes**, a reduction of ~ **40%**.
 
 If we prefer to stick to the original lookup code, we can still
 reduce the table size to **6452 bytes**, a reduction of ~ **22%**.
@@ -388,3 +391,5 @@ compression technique.
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
 table of between 4KB to 8KB in size.
+
+The 4KB version is here - 
