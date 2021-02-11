@@ -11,26 +11,26 @@ So it is usually desirable to make case conversions (and, by extension,
 case-insensitive comparisions) as fast as possible.
 
 In this post we are going to look at one of the options - very fast 
-case conversion using **compressed lookup tables**, an excellent 
-example of the
-[space-time tradeoff](https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff)
-technique.
+case conversion using **compressed lookup tables**.
 
 If in rush, you can jump straight to the [Conclusion](#Conclusion).
 
 ## Lookup tables
 
-The simplest way to do this is with a lookup table. This is also the fastest way:
+The simplest way to case conversion is with a lookup table:
 
-    const char to_lower[256] = { ... };
-    const char to_upper[256] = { ... };
+    const char to_lower[256] = { ... }; // lower case versions of every character
+    const char to_upper[256] = { ... }; // upper case versions of every character
   
     char a = to_lower[ 'A' ];
     char Z = to_upper[ 'z' ];
     ...
 
-The cost of speed is the space needed to hold the lookup tables. If we
-are working with the 7-bit ASCII set, the tables will take 512 bytes.
+This is also the fastest way. The cost of speed is the space needed to 
+hold the lookup tables, the good old
+[space-time tradeoff](https://en.wikipedia.org/wiki/Space%E2%80%93time_tradeoff).
+
+If we are working with the 7-bit ASCII set, the tables will take 512 bytes.
 
 These can be allocated and initialized statically (and therefore stored
 in the executable binary) or they can be created at run-time. This is
