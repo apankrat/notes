@@ -151,9 +151,9 @@ So here's what's going on:
        FExx  ->  1200 (zeroes)   |
        FFxx  ->  1100            |
 
-    This compresses table down to 4608 items (18 x 256) + the size 
-    of the index. This is already excellent - around 10K instead 
-    of 128K - but it can be compressed further.
+    This compresses table down to **4608** items (18 x 256) + the 
+    size of the index. This is already excellent - around 10K 
+    instead of 128K - but it can be compressed further.
     
  4. Another insight is that remaining blocks still contain a lot
     of zeroes. More specifically, one block may *end* with lots 
@@ -207,6 +207,8 @@ So here's what's going on:
  
     So the 0300 block can be "pulled up" to overlap with
     the 0200 block and its index entry adjusted to match.
+    
+    The blocks can be **squished** together if you will.
     Like so -
     
         ...
@@ -235,14 +237,24 @@ So here's what's going on:
         02f8 | 0000 0000 0000 0000 0000 0000 0000 0000 | 0368 
              | 0001 0000 0001 0000 0000 0000 0001 0000 | 0370 
                                                         ...
-      This little maneuver reduces our table by 112 entries (14 rows x 8),
-      and that's just for these two blocks.
+      This little maneuver reduces our table by 112 entries 
+      (14 rows x 8), and that's just for these two blocks.
+
+5. Taking the idea a bit further, we have no constraints on
+   where in the table our *zero-filled* block should be.
    
-5. Finally, the index and the table are merged into a single array.
+   So we find a pair of blocks that have the largest 
+   *zero-filled* overlap and we place our zero-filled
+   block between them.
+   
+   Once the blocks are in this new order, we squish them
+   This brings the total number of entries down to **3866**.
+
+6. Finally, the index and the table are merged into a single array.
     
-   The `casemap_lower[]` from the Wine's code comprises two separate parts 
-   - it starts with 256 entries of the index, followed by the actual blocks 
-   with deltas.
+   The `casemap_lower[]` comprises two distinct parts.
+   It starts with 256 index entries, followed by 3866 
+   deltas, to the grand total of **4122**.
     
    Going back to the `towlower()` code -
     
@@ -253,9 +265,9 @@ So here's what's going on:
    start in the data section, followed by the retrieval of ch's delta value 
    within the block at the offset of `ch & 0xff`.
  
-   Marvelous, isn't it?
+   Bloody marvelous, isn't it?
     
-   But wait, we can still do a bit better!
+   But wait! We can take it a bit further.
     
 # Table compression, revised
 
@@ -285,15 +297,15 @@ be smaller.
 The last columns is the number of items in the table. But let's not 
 forget the index:
 
-      Block size  |  Index size  |  Table size  |  Total size
+    Block size  |  Index size  |  Table size  |  Total size
                      
-         1024             64           8293           8357
-          512            128           5345           5473
-          256            256           3866           4122       <-  the original
-          128            512           3051           3563
-           64           1024           2234           3258       <-  the smallest
-           32           2048           1423           3471
-           16           4096            867           4963
+       1024             64           8293           8357
+        512            128           5345           5473
+        256            256           3866           4122       <-  the original
+        128            512           3051           3563
+         64           1024           2234           3258       <-  the smallest
+         32           2048           1423           3471
+         16           4096            867           4963
  
  That is, reducing the block size to 64 bytes we can compress the
  table down to 3258 items (**6516 bytes**). This is 21% reduction
@@ -303,88 +315,57 @@ forget the index:
  
      ...
      return ch + casemap_lower[casemap_lower[ch >> 6] + (ch & 0x3f)];
- 
-## Separate index
-
-The table size can be reduced a bit more by noticing that we have 
-only 44 unique index entries, a number that fits into `uint8_t`.
-
-So instead of -
-
-    uint16_t  index[1024] = { ... };
-    uint16_t  offset = index[ ch >> 6 ];
-    
-    ch = table[offset + (ch & 0x3f)];
-    
-we can use double-indexing like so:
-
-    uint8_t   index[1024] = { ... };
-    uint16_t  offsets[44] = { ... };
-    uint16_t  offset = offsets[ index[ ch >> 6 ] ];
-    
-    ch = table[offset + (ch & 0x3f) ];
-    
-This adds 3rd memory reference, but it also reduces the overall size
-of the table to **5580 bytes** (1024 + 2 x 44 + 2 x 2234).
 
 ## Better block sequence
 
-Finally, we can try and shuffle blocks around to see if we can find
-a combination that results in a better cumulative overlap.
+In addition to finding the best spot for the zero-filled
+block, we can try and shuffle **all** blocks around and
+search for the most squishable combination.
 
-We can also try and match not just *zero-filled* common parts, but
-any arbitrary-filled footers and headers. That is if one block ends
-with 
+I suspect that there is a better than O(n!) way to do it,
+but being the lazy optimizators that we are, we will just
+resort to randomized shuffling and an overnight test run.
 
-    2222 2222 2222 2222
-    1111 1111 1111 1111    
-    0000 0000 0000 0000
+Here are the results:
+
+    Block size  |     Overlap     |    Total size
+
+        256        742  ->  1196     4122  ->  3668
+        128        533  ->   870     3563  ->  3226       <-  the smallest
+         64        582  ->   596     3258  ->  3244       
+         32        337  ->   339     3471  ->  3469
+         16        189  ->   189     4963  ->  4963       <-  no change
+
+That is, block reshuffling can reduce the original Wine's
+table from **4122** to **3668** items.
+
+Combined with a smaller block size the reshuffling can
+produce a **3244** item table.
+
+## Separate index
+
+The table size can be reduced a bit more by noticing that we have 
+fewer than 256 unique index entries. So the index can be built
+as `uint8_t[]`  instead of `uint16_t[]`.
+
+However this requires using a secondary index as such:
+
+    // for the block size of 64
     
-and another starts with 
-
-    1111 1111 1111 1111
-    0000 0000 0000 0000
-    1111 1111 1111 1111
+    uint8_t   index[1024]  = { ... };
+    uint16_t  offsets[44]  = { ... };
+    uint16_t  deltas[2200] = { ... };
+    uint16_t  offset = offsets[ index[ ch >> 6 ] ];
     
-then we'll pick up a two-line overlap rather than none.
-
-### Implementation
-
-Testing all possible block permutations is computationally 
-prohibitive, so we need to resort to randomized shuffling.
-
-Maximum overlap between two blocks can be calculated fairly 
-efficiently by using a running checksum algorithm to quickly
-reject shifts that aren't worthy of detailed testing.
-
-    // uint16_t a[BLOCK_SIZE]; -- leading block
-    // uint16_t b[BLOCK_SIZE]; -- trailing block
-
-    size_t max_overlap = 0;
-
-    uint64_t sum_a = 0;
-    uint64_t sum_b = 0;
-
-    for (size_t shift = 1; shift+1 < BLOCK_SIZE; shift++)
-    {
-        sum_a += a[BLOCK_SIZE-shift];
-        sum_b += b[shift-1];
-
-        if (sum_a != sum_b)
-            continue;
-
-        uint16_t diff = 0;
-
-        for (size_t j = 0; j < shift; j++)
-            diff |= a[BLOCK_SIZE-shift+j] - b[j];
-
-        if (! diff)
-            max_overlap = shift;
-    }
+    ch = deltas[offset + (ch & 0x3f) ];
     
-The inner loop can also be vectorized if needed.
+When applied, this change yields the following total byte counts:
 
-### Results
-
-
+    Block size  |  Index[]  |   Offsets[]   |   Deltas[]   |  Total bytes
+				     		    	       
+       256           256    +    18 x 2     +   3412 x 2   =     7116
+       128           512    +    28 x 2     +   2714 x 2   =     5996
+        64          1024    +    44 x 2     +   2220 x 2   =     5552
+        32          2048    +    55 x 2     +   1421 x 2   =     5000       <-  chicken dinner
+	    16          4096    +    66 x 2     +    867 x 2   =     5962
 
