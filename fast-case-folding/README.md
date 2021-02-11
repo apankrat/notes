@@ -250,12 +250,11 @@ So here's what's going on:
 5. Taking the idea a bit further, we have no constraints on
    where in the table our *zero-filled* block should be.
    
-   So we find a pair of blocks that have the largest 
-   *zero-filled* overlap and we place our zero-filled
-   block between them.
+   So we find a pair of blocks that have a large *zero-filled*
+   overlap and we place our zero-filled block between them.
    
-   Once the blocks are in this new order, we squish them
-   This brings the total number of entries down to **3866**.
+   Wine places this block seventh and after a squish this
+   brings table size down to **3866** entries.
 
 6. Finally, the index and the table are merged into a single array.
     
