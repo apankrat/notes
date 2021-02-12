@@ -289,9 +289,8 @@ Using larger block sizes will reduce the size of the index, but it
 will also cause greater %-age of blocks to contain at least one 
 non-zero entry.
 
-The potential for block overlap (as per #4 above) will also increase
-for any given pair of blocks, but the number of pairs themselves will 
-be smaller.
+The potential for larger block overlaps will also increase, but the 
+number of block pairs will be smaller.
 
     Block size  |  Used blocks  |  Data size  |  Overlap  |  Table size
                                                                        
@@ -337,21 +336,21 @@ resort to randomized shuffling and an overnight test run.
 
 Here are the results:
 
-    Block size  |     Overlap     |     Total size
-
-       1024        1757  -> xxxx      8547  ->  xxxx
-        512        1101  -> xxxx      5683  ->  xxxx
-        256         742  ->  xxx      4122  ->  xxxx
-        128         539  ->  xxx      3557  ->  xxxx   <-  the smallest
-         64         578  ->  xxx      3262  ->  xxxx   
-         32         345  ->  xxx      3463  ->  xxxx
-         16         187  ->  xxx      4965  ->  xxxx   <-  no change
+    Block size  |     Overlap      |     Table size     |     Total size
+                                             
+       1024        1757  -> 2861       8483  ->  4582       8547  ->  7443
+        512        1101  -> 1891       5555  ->  3002       5683  ->  4893
+        256         742  -> 1160       3866  ->  2544       4122  ->  3704
+        128         539  ->  836       3045  ->  2424       3557  ->  3260
+         64         578  ->  595       2238  ->  2650       3262  ->  3245   <-  the smallest
+         32         345  ->  345       1415  ->  1415       3463  ->  3463
+         16         187  ->  187        869  ->   869       4965  ->  4965
 
 That is, block reshuffling can reduce the original Wine
-table from **4122** to **3668** items.
+table from **4122** to **3704** items.
 
 Combined with a smaller block size the reshuffling can
-produce a **3244** item table.
+produce a **3245** item table.
 
 ## Separate index
 
