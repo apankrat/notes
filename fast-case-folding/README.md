@@ -387,15 +387,14 @@ When applied, this change yields the following total byte counts:
 
 ## In other words
 
-If we are willing to add an extra memory reference to every case
-conversion, we can shrink the original Wine table of 
-**8244 bytes** down to **4504 bytes**, a reduction of ~ **45%**.
+If we prefer to use Wine's original lookup code, we can reduce 
+the table size to **5986 bytes**, a reduction of ~ **37%**.
 
-If we prefer to stick to the original lookup code, we can still
-reduce the table size to **5986 bytes**, a reduction of ~ **37%**.
+If we are OK with using an extra memory reference, we can
+further shrink the table to **4504 bytes**, a reduction of ~ **45%**.
 
-Either way this is just a cherry on top of an already excellent
-compression technique.
+Either way this is still just a cherry on top of an already 
+excellent compression technique.
 
 # Conclusion
 
