@@ -388,10 +388,10 @@ When applied, this change yields the following total byte counts:
 ## In other words
 
 If we prefer to use Wine's original lookup code, we can reduce 
-the table size from **8244** to **5986 bytes**, a reduction of ~ **37%**.
+the table size from **8244** to **5986** bytes, a reduction of ~ **37%**.
 
 If we are OK with using an extra memory reference, we can
-further shrink the table to **4504 bytes**, a reduction of ~ **45%**.
+further shrink the table to **4504** bytes, a reduction of ~ **45%**.
 
 Either way this is still just a cherry on top of an already 
 excellent compression technique.
