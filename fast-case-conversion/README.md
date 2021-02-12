@@ -317,25 +317,27 @@ weighted graph.
 
 ### Heuristics
 
-It just happens that the underlying N x N matrices show some 
-well-pronounced patterns, so a simple heuristical guesse will
-go a long way.
+It just happens that underlying N x N matrices (of graph edge
+weights) show some well-pronounced patterns, so a fairly simple 
+heuristical approach goes a long way.
 
-Basically we pick the most squishable pair and then keep adding
-blocks that squish the best with it either at the front or at 
-the back. That's it.
+The gist of it is that we pick the most squishable pair and then 
+keep adding blocks that squish the best with it either at the
+front or at the back.
 
-This approach yields a reduction of **972** items for the Wine
-case versus its original **742**. It also shows even higher gains
-for smaller block sizes.
+This approach yields a table size reduction of **972** items
+compared to **742** of the Wine's original compression. And
+for smaller block sizes the gains are even higher.
 
 ### Randomized shuffling
 
 In addition to "educated" guessing we can also try randomized
-shuffling, let it run overnight and see if it surfaces any 
-better combos.
+shuffling. Let it run overnight and see if any better combos
+surface.
 
-Surprisingly, it does.
+Surprisingly, they do.
+
+### A + B
 
 With both methods combined here are the results:
 
