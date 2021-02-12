@@ -326,37 +326,65 @@ forget the index:
 
 ## Better block sequence
 
-In addition to finding the best spot for the zero-filled
-block, we can try and shuffle **all** blocks around and
-look for the most squishable combination.
+In addition to finding the best spot for the zero-filled block, 
+we can try and shuffle **all** blocks around and look for the 
+most squishable combination.
 
-I suspect that there is a better than O(n!) way to do it,
-but being the lazy optimizators that we are, we will just
-resort to randomized shuffling and an overnight test run.
+If we are to squint a bit, this search will sure look like
+a form of the
+[Travelling Salesman Problem](https://en.wikipedia.org/wiki/Travelling_salesman_problem),
+meaning no shortcuts and a rather unpleasant running time.
 
-Here are the results:
+More specifically, the search reduces to finding (1) the heaviest
+path (2) of a fixed length (3) on a bidirectional fully-meshed
+weighted graph.
+
+### Heuristics
+
+It just happens that the underlying N x N matrices show some 
+well-pronounced patterns, so a simple heuristical guesse will
+go a long way.
+
+Basically we pick the most squishable pair and then keep adding
+blocks that squish the best with it either at the front or at 
+the back. That's it.
+
+This approach yields a reduction of **972** items for the Wine
+case versus its original **742**. It also shows even higher gains
+for smaller block sizes.
+
+### Randomized shuffling
+
+In addition to "educated" guessing we can also try randomized
+shuffling, let it run overnight and see if it surfaces any 
+better combos.
+
+Surprisingly, it does.
+
+With both methods combined here are the results:
 
     Block size  |     Overlap      |     Table size     |     Total size
                                              
-       1024        1757  -> 2861       8483  ->  4582       8547  ->  7443
-        512        1101  -> 1891       5555  ->  3002       5683  ->  4893
-        256         742  -> 1160       3866  ->  2544       4122  ->  3704
-        128         539  ->  836       3045  ->  2424       3557  ->  3260
-         64         578  ->  595       2238  ->  2650       3262  ->  3245   <-  the smallest
-         32         345  ->  345       1415  ->  1415       3463  ->  3463
-         16         187  ->  187        869  ->   869       4965  ->  4965
+    *  1024        1757  -> 2861       8483  ->  4582       8547  ->  7443
+    *   512        1101  -> 1900       5555  ->  4756       5683  ->  4884
+    *   256         742  -> 1241       3866  ->  3367       4122  ->  3623
+        128         539  ->  980       3045  ->  2604       3557  ->  3116
+         64         578  ->  847       2238  ->  1969       3262  ->  2993   <-  the smallest
+         32         345  ->  587       1415  ->  1173       3463  ->  3221
+         16         187  ->  332        869  ->   724       4965  ->  4820
 
-That is, block reshuffling can reduce the original Wine
-table from **4122** to **3704** items.
+Lines marked with `*` are from randomized shuffling and
+the rest is from heuristic guessing.
 
-Combined with a smaller block size the reshuffling can
-produce a **3245** item table.
+The best compression is achieved with the combination of a
+smaller block size and the reshuffling. The smallest table 
+is **2993** items long or about **37%** smaller than the original.
 
 ## Separate index
 
 The table size can be reduced a bit more by noticing that we have 
-fewer than 256 unique index entries. So the index can be built
-as `uint8_t[]`  instead of `uint16_t[]`.
+fewer than 256 unique index entries. So the index can be built as
+`uint8_t[]` instead of `uint16_t[]`.
 
 However this requires using a secondary index as such:
 
@@ -373,20 +401,22 @@ When applied, this change yields the following total byte counts:
 
     Block size  |  Index[]  |   Offsets[]   |   Deltas[]   |  Total bytes
 				     		    	       
-       256           256    +    18 x 2     +   3412 x 2   =     7116
-       128           512    +    28 x 2     +   2714 x 2   =     5996
-        64          1024    +    44 x 2     +   2220 x 2   =     5552
-        32          2048    +    55 x 2     +   1421 x 2   =     5000       <-  chicken dinner
-        16          4096    +    66 x 2     +    867 x 2   =     5962
+      1024            64    +    10 x 2     +   4582 x 2   =     9248
+       512           128    +    13 x 2     +   4756 x 2   =     9666
+       256           256    +    18 x 2     +   3367 x 2   =     7026
+       128           512    +    28 x 2     +   2604 x 2   =     5776
+        64          1024    +    44 x 2     +   1969 x 2   =     5018
+        32          2048    +    55 x 2     +   1173 x 2   =     4504   <-  chicken dinner
+        16          4096    +    66 x 2     +    724 x 2   =     5676
 
 ## In other words
 
 If we are willing to add an extra memory reference to every case
 conversion, we can shrink the original Wine table of 
-**8244 bytes** down to **5000 bytes**, a reduction of ~ **40%**.
+**8244 bytes** down to **4504 bytes**, a reduction of ~ **45%**.
 
 If we prefer to stick to the original lookup code, we can still
-reduce the table size to **6452 bytes**, a reduction of ~ **22%**.
+reduce the table size to **5986 bytes**, a reduction of ~ **37%**.
 
 Either way this is just a cherry on top of an already excellent
 compression technique.
@@ -395,12 +425,12 @@ compression technique.
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
-table of between 5KB to 8KB in size.
+table of between 4.5KB to 8KB in size.
 
 The 8KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
 
-The 5KB version, with better table compression:
+The 4.5KB version, as per above:
 * x
 * z
