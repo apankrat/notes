@@ -125,9 +125,9 @@ So here's what's going on:
    This fills the table with 0s for all non-caseable characters, 
    creating *lots* of redundancy and making it way easier to compress.
 
-2. Next, the full set of possible `wchar_t` values - all 65536 of
-   them - is split into 256 blocks, 256 characters each. Entries 
-   for values starting with 00xx (in hex) go into the first block, 
+2. Next, the full set of `wchar_t` values - all 65536 of
+   them - is split into 256 blocks, 256 characters each. Deltas
+   for characters starting with 00xx (in hex) go into the first block, 
    01xx - into the second, etc.
    
        block 00 - [256 deltas for values 0000 to 00FF]
@@ -135,15 +135,16 @@ So here's what's going on:
         ...
        block FF - [256 deltas for values FF00 to FFFF]
     
-3. Once this is done, we notice that only 17 blocks are **not** 
-   completely zero-filled - 
+3. Once this is done, we may notice that only 17 blocks are 
+   **not** completely zero-filled - 
    
        00, 01, 02, 03, 04, 05, 10, 13, 1C, 1E, 1F, 21, 24, 2C, A6, A7, FF
    
    Remaining 239 blocks will be all full of zeroes.
    
    So we can store just these 17 blocks plus a zero-filled block and 
-   then use an *index*  to map block ID to its entry in the table:
+   then use an **index**  to map block's ID to its actual data in
+   the table:
    
        Index                     |   Table
        --------------------------+-------------------------------------------
@@ -172,41 +173,17 @@ So here's what's going on:
         0248 | 0001 0000 0001 0000 0001 0000 0001 0000  <- last non-zeros
         0250 | 0000 0000 0000 0000 0000 0000 0000 0000
         0258 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0260 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0268 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0270 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0278 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0280 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0288 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0290 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0298 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02a0 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02a8 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02b0 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02b8 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02c0 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02c8 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02d0 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02d8 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02e0 | 0000 0000 0000 0000 0000 0000 0000 0000
+        ...
         02e8 | 0000 0000 0000 0000 0000 0000 0000 0000
         02f0 | 0000 0000 0000 0000 0000 0000 0000 0000
-        02f8 | 0000 0000 0000 0000 0000 0000 0000 0000
+        02f8 | 0000 0000 0000 0000 0000 0000 0000 0000  <- end of the block
        
     And here's the start of the 0300 one -
     
-        0300 | 0000 0000 0000 0000 0000 0000 0000 0000
+        0300 | 0000 0000 0000 0000 0000 0000 0000 0000  <- start of the block
         0308 | 0000 0000 0000 0000 0000 0000 0000 0000
         0310 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0318 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0320 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0328 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0330 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0338 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0340 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0348 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0350 | 0000 0000 0000 0000 0000 0000 0000 0000
-        0358 | 0000 0000 0000 0000 0000 0000 0000 0000
+        ...
         0360 | 0000 0000 0000 0000 0000 0000 0000 0000
         0368 | 0000 0000 0000 0000 0000 0000 0000 0000
         0370 | 0001 0000 0001 0000 0000 0000 0001 0000  <- first non-zeros
