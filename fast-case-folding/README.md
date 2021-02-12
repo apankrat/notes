@@ -3,12 +3,11 @@
 Converting strings and characters between lower and upper cases is a very 
 common need.
 
-In particular, case-insensitive string comparision is usually implemented 
-this way - a comparison that often occurs on the program's fast paths as 
-a part of data container lookups and content manipulation.
+In particular, case conversion is often used to implement *case-insensitive
+comparision*, an operation that is often present on the program's fast paths 
+as a part of data container lookups and content manipulation.
 
-So it is usually desirable to make case conversions (and, by extension,
-case-insensitive comparisions) as fast as possible.
+So it is usually desirable to make case conversions as fast as possible.
 
 In this post we are going to look at one of the options - very fast 
 case conversion using **compressed lookup tables**.
