@@ -348,17 +348,17 @@ With both methods combined here are the results:
     *  1024        1757  -> 2861       8483  ->  4582       8547  ->  7443
     *   512        1101  -> 1900       5555  ->  4756       5683  ->  4884
     *   256         742  -> 1241       3866  ->  3367       4122  ->  3623
-        128         539  ->  980       3045  ->  2604       3557  ->  3116
-         64         578  ->  847       2238  ->  1969       3262  ->  2993   <-  the smallest
-         32         345  ->  587       1415  ->  1173       3463  ->  3221
-         16         187  ->  332        869  ->   724       4965  ->  4820
-
+        128         539  -> 1038       3045  ->  2546       3557  ->  3058
+         64         578  ->  887       2238  ->  1929       3262  ->  2953   <-  the smallest
+         32         345  ->  599       1415  ->  1161       3463  ->  3209
+         16         187  ->  369        869  ->   687       4965  ->  4783
+	 
 Results marked with `*` are from randomized shuffling and
 the rest is from heuristic guessing.
 
 The best compression is achieved with the combination of a
 smaller block size and the reshuffling. The smallest table 
-is **2993** items long or about **37%** smaller than the original.
+is **2953** items long or about **28%** smaller than the original.
 
 ## Separate index
 
@@ -372,7 +372,7 @@ However this requires using a secondary index as such:
     
     uint8_t   index[1024]  = { ... };
     uint16_t  offsets[44]  = { ... };
-    uint16_t  deltas[2200] = { ... };
+    uint16_t  deltas[1929] = { ... };
     uint16_t  offset = offsets[ index[ ch >> 6 ] ];
     
     ch = deltas[offset + (ch & 0x3f) ];
@@ -384,18 +384,18 @@ When applied, this change yields the following total byte counts:
       1024            64    +    10 x 2     +   4582 x 2   =     9248
        512           128    +    13 x 2     +   4756 x 2   =     9666
        256           256    +    18 x 2     +   3367 x 2   =     7026
-       128           512    +    28 x 2     +   2604 x 2   =     5776
-        64          1024    +    44 x 2     +   1969 x 2   =     5018
-        32          2048    +    55 x 2     +   1173 x 2   =     4504   <-  chicken dinner
-        16          4096    +    66 x 2     +    724 x 2   =     5676
+       128           512    +    28 x 2     +   2546 x 2   =     5660
+        64          1024    +    44 x 2     +   1929 x 2   =     4970
+        32          2048    +    55 x 2     +   1161 x 2   =     4480   <-  chicken dinner
+        16          4096    +    66 x 2     +    687 x 2   =     5602
 
 ## In other words
 
 If we prefer to use Wine's original lookup code, we can reduce 
-the table size from **8244** to **5986** bytes, a reduction of ~ **37%**.
+the table size from **8244** to **7026** bytes, a reduction of ~ **14%**.
 
 If we are OK with using an extra memory reference, we can
-further shrink the table to **4504** bytes, a reduction of ~ **45%**.
+further shrink the table to **4480** bytes, a reduction of ~ **45%**.
 
 Either way this is still just a cherry on top of an already 
 excellent compression technique.
@@ -404,12 +404,12 @@ excellent compression technique.
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
-table of between 4.5KB to 8KB in size.
+table of between 4.4KB to 8KB in size.
 
 The 8KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
 
-The 4.5KB version, as per above:
+The 4.4KB version, as per above:
 * x
 * z
