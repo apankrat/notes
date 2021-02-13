@@ -331,11 +331,13 @@ for smaller block sizes the gains are even higher.
 
 ### Randomized shuffling
 
-In addition to "educated" guessing we can also try randomized
-shuffling. Let it run overnight and see if any better combos
-surface.
+In addition to "educated guesses" we can also try something as
+dumb as randomized shuffling. On a desktop machine a fairly basic
+code can run 10-50 million checks a second.
 
-Surprisingly, they do.
+So we just let it run for a while and see if it manages to 
+find any better combos. Surprisingly, it does and just in a
+matter of a couple of hours.
 
 ### A + B
 
@@ -351,7 +353,7 @@ With both methods combined here are the results:
          32         345  ->  587       1415  ->  1173       3463  ->  3221
          16         187  ->  332        869  ->   724       4965  ->  4820
 
-Lines marked with `*` are from randomized shuffling and
+Results marked with `*` are from randomized shuffling and
 the rest is from heuristic guessing.
 
 The best compression is achieved with the combination of a
