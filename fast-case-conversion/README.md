@@ -315,19 +315,58 @@ More specifically, the search reduces to finding (1) the heaviest
 path (2) of a fixed length (3) on a bidirectional fully-meshed
 weighted graph.
 
+### Full search
+
+For smaller block counts we can just brute-force our way through
+all possible block permutations.
+
+With a bit of optimization it's possible to run at 30-40M checks
+per second. 
+
+With the block size of 1024 we have 10 unique blocks. That's 10!
+or 3,628,800 permutations, which take 0.1 sec to process. And the
+answer is the maximum squish of **2861**.
+
+With the block size of 512 we have 13 unique blocks - that's 
+6,227,020,800 permutations or ~ 207 seconds of processing time.
+Still doable and the answer is **1900**.
+
+But with the block size of 256 - Wine's original - the number of
+combos is 18! => 213412456 seconds or about 82 months. No bueno.
+
 ### Heuristics
+
+The second approach is to try and *construct* block sequences,
+seemingly intelligently.
 
 It just happens that underlying N x N matrices (of graph edge
 weights) show some well-pronounced patterns, so a fairly simple 
-heuristical approach goes a long way.
+approach goes a long way.
 
 The gist of it is that we pick the most squishable pair and then 
 keep adding blocks that squish the best with it either at the
 front or at the back.
 
-This approach yields a table size reduction of **972** items
-compared to **742** of the Wine's original compression. And
-for smaller block sizes the gains are even higher.
+For the block size of 256 this yields a maximum squish of **972**
+compared to the Wine's original **742**.
+
+Secondly, when faced with equally-good appending/prepending
+options, we can check if preferring one or another gives 
+better results.
+
+Thirdly, we can check how *just* appending or *just* prepending
+fares in comparison.
+
+Fourthly, we can construct a sequence out of multiple parts
+with our loop basically making a choice between (1) adding a
+block to an existing part (2) merging two parts with a block
+or (3) starting yet another part.
+
+Combining all these together we are looking at a "heuristical"
+search space of several thousand options. Combining through
+it gets us this:
+
+    xx
 
 ### Randomized shuffling
 
