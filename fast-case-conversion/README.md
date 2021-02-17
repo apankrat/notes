@@ -271,30 +271,30 @@ non-zero entry.
 The potential for larger block overlaps will also increase, but the 
 number of block pairs will be smaller.
 
-    Block size  |  Used blocks  |  Data size  |  Overlap  |  Table size
-                                                                       
-       1024     x       10      =    10240    -   1757    =    8483    
-        512     x       13      =     6656    -   1101    =    5555    
-        256     x       18      =     4608    -    742    =    3866       <- the original split
-        128     x       28      =     3584    -    539    =    3045    
-         64     x       44      =     2816    -    578    =    2238    
-         32     x       55      =     1760    -    345    =    1415    
-         16     x       66      =     1056    -    187    =     869    
+    Block size  |  Used blocks  |   Items   |  Squish  |  Data size
+                                                                     
+       1024     x       10      =   10240   -   1757   =    8483    
+        512     x       13      =    6656   -   1101   =    5555    
+        256     x       18      =    4608   -    742   =    3866       <- the original split
+        128     x       28      =    3584   -    539   =    3045    
+         64     x       44      =    2816   -    578   =    2238    
+         32     x       55      =    1760   -    345   =    1415    
+         16     x       66      =    1056   -    187   =     869    
 
 The last column is the number of items in the table. But let's not 
 forget the index:
 
-    Block size  |  Index size  |  Table size  |  Total size
+    Block size  |  Index size  |  Data size  |  Total size
                      
-       1024             64     +     8483     =     8547
-        512            128     +     5555     =     5683
-        256            256     +     3866     =     4122       <-  the original
-        128            512     +     3045     =     3557
-         64           1024     +     2238     =     3262       <-  the smallest
-         32           2048     +     1415     =     3463
-         16           4096     +      869     =     4965
+       1024             64     +     8483    =     8547
+        512            128     +     5555    =     5683
+        256            256     +     3866    =     4122       <-  the original
+        128            512     +     3045    =     3557
+         64           1024     +     2238    =     3262       <-  the smallest
+         32           2048     +     1415    =     3463
+         16           4096     +      869    =     4965
  
- That is, reducing the block size to 64 deltas we can compress the
+ That is, reducing the block size to 64 items we can compress the
  table down to 3262 items (**6516 bytes**). This is 21% reduction
  compared to the original of 4122 (or 8244 bytes).
  
@@ -358,18 +358,17 @@ This alone will yield a squish of **972** for Wine's original
 block sequence.
 
 We can check how *just* appending or *just* prepending fares 
-in comparison.
+in comparison. We can also *prefer* either appending or 
+prepending when both would yield the same improvement.
 
-We can also *prefer* either appending or prepending when both
-would yield the same improvement.
-
-We can also construct our block sequence out of *multiple parts*.
+We can construct our block sequence out of *multiple parts*.
 That is, our assembly loop will be making a choice between (1) 
 adding a block to an existing part (2) merging two parts with 
 a block or (3) starting yet another part.
 
 Then, once we have our sequence we can check if splitting it
-into two parts and swapping them would yield a better squish.
+into two parts and swapping them around would yield a better
+squish.
 
 Similarly, we can see if moving an item to another spot or
 swapping it with another item would increase a squish.
@@ -385,13 +384,13 @@ Summarized, the results are as follows:
 
     Block size    Max exact squish    Heuristic squish    Zero-block squish
 
-      1024               2861               2861                1757
-       512               1900               1900                1101
-       256                  ?               1244                 742
-       128                  ?               1113                 539
-        64                  ?                965                 578
-        32                  ?                628                 345
-        16                  ?                387                 187
+      1024              2861                2861                1757
+       512              1900                1900                1101
+       256                 ?                1244                 742
+       128                 ?                1113                 539
+        64                 ?                 965                 578
+        32                 ?                 628                 345
+        16                 ?                 387                 187
 
 ### Randomized shuffling
 
@@ -402,15 +401,15 @@ any of the block sizes. So there's that.
 
 ### The results
 
-    Block size  |      Squish      |       Deltas      |   Deltas + index
+    Block size  |      Squish       |       Items       |   Items + Index
                                              
-       1024        1757  -> 2861       8483  ->  7379      8547  ->  7443
-        512        1101  -> 1900       5555  ->  4756      5683  ->  4884
-        256         742  -> 1241       3866  ->  3367      4122  ->  3623   <-  the original
-        128         539  -> 1083       3045  ->  2501      3557  ->  3013
-         64         578  ->  894       2238  ->  1922      3262  ->  2946   <-  the smallest
-         32         345  ->  600       1415  ->  1160      3463  ->  3208
-         16         187  ->  369        869  ->   687      4965  ->  4783
+       1024        1757  ->  2861       8483  ->  7379      8547  ->  7443
+        512        1101  ->  1900       5555  ->  4756      5683  ->  4884
+        256         742  ->  1241       3866  ->  3367      4122  ->  3623   <-  the original
+        128         539  ->  1083       3045  ->  2501      3557  ->  3013
+         64         578  ->   894       2238  ->  1922      3262  ->  2946   <-  the smallest
+         32         345  ->   600       1415  ->  1160      3463  ->  3208
+         16         187  ->   369        869  ->   687      4965  ->  4783
 
 The best compression is achieved with the combination of a smaller block
 size and the reshuffling. The smallest table is **2946** items long or
@@ -426,24 +425,24 @@ However this requires using a secondary index as such:
 
     // for the block size of 64
     
-    uint8_t   index[1024]  = { ... };
-    uint16_t  offsets[44]  = { ... };
-    uint16_t  deltas[1929] = { ... };
-    uint16_t  offset = offsets[ index[ ch >> 6 ] ];
+    uint8_t   index[1024] = { ... };
+    uint16_t  offsets[44] = { ... };
+    uint16_t  items[1929] = { ... };
+    uint16_t  block_offset = offsets[ index[ ch >> 6 ] ];
     
-    ch = deltas[offset + (ch & 0x3f) ];
+    ch = items[block_offset + (ch & 0x3f) ];
     
-Or, if using Wine's trick of merging arrays, it will be:
+Or, using Wine's merged array trick:
 
     uint8_t   index[1024]      = { ... };
     uint16_t  casemap[44+1929] = { ... };
-    uint16_t  offset_i = index[ ch >> 6 ];
+    uint16_t  block_i = index[ ch >> 6 ];
 
-    ch = casemap[ casemap[offset_i] + (ch & 0x3f) ];
+    ch = casemap[ casemap[block_i] + (ch & 0x3f) ];
 
-With this reduction in place, here are new byte counts:
+With this reduction in place, here are the new byte counts:
 
-    Block size  |  Index   |   Offsets + Deltas   |  Total bytes
+    Block size  |  Index   |    Offsets + Items   |  Total bytes
 				     		    	       
       1024           64    +    (10 + 7379) x 2   =    14842
        512          128    +    (13 + 4756) x 2   =     9666
