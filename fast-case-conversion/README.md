@@ -1,5 +1,5 @@
 # Fast character case conversion
-## * or how to *really* compress redundant arrays
+## ... or how to *really* compress sparse arrays
 
 Converting strings and characters between lower and upper cases is a very 
 common need.
@@ -11,8 +11,8 @@ as a part of data container lookups and content manipulation.
 So it is usually desirable to make case conversions as fast as possible.
 
 In this post we are going to look at one of the options - very fast 
-case conversion using **indexed lookup tables**, which will drag us down 
-a little rabbit hole of **compression of highly redundant arrays**.
+case conversion using **indexed lookup tables**, which is one of the
+entrances to a little rabbit hole of **compressed sparse arrays**.
 
 If in rush, you can jump straight to the [Conclusion](#Conclusion).
 
