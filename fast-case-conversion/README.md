@@ -1,4 +1,5 @@
-# Fast character case conversion
+# Fast character case conversion ...
+## ... or how to *really* compress a sparse array
 
 Converting strings and characters between lower and upper cases is a very 
 common need.
@@ -54,7 +55,7 @@ run-time.
 
 ## Unicode
 
-Unicode is where it gets complicated.
+Unicode is where it gets interesting.
 
 At the time of writing the [Unicode Standard](http://www.unicode.org/versions/latest/) 
 is at its 13th revision. The principle list of characters is [UnicodeData.txt](https://www.unicode.org/Public/13.0.0/ucd/UnicodeData.txt)
@@ -254,9 +255,9 @@ and I'll add a proper reference.
    
 # Table compression, revised
 
-But wait! We can take it a bit further.
+But wait! We can do better.
 
-## Smaller block sizes
+## Use smaller blocks
  
 Instead of splitting the original 65536 set into 256 x 256 blocks we 
 can try different block sizes.
@@ -300,7 +301,7 @@ forget the index:
      ...
      return ch + casemap_lower[casemap_lower[ch >> 6] + (ch & 0x3f)];
 
-## Better block sequence
+## Rearrange the blocks
 
 In addition to finding the best spot for the zero-filled block, 
 we can try and shuffle **all** blocks around and look for the 
@@ -320,90 +321,100 @@ weighted graph.
 For smaller block counts we can just brute-force our way through
 all possible block permutations.
 
-With a bit of optimization it's possible to run at 30-40M checks
+With a bit of optimization it's possible to run at ~ 50M checks
 per second. 
 
 With the block size of 1024 we have 10 unique blocks. That's 10!
-or 3,628,800 permutations, which take 0.1 sec to process. And the
-answer is the maximum squish of **2861**.
+or 3,628,800 permutations, which take 0.1 sec to process and get
+to the answer - **2861**.
 
 With the block size of 512 we have 13 unique blocks - that's 
-6,227,020,800 permutations or ~ 207 seconds of processing time.
-Still doable and the answer is **1900**.
+6,227,020,800 permutations or ~ 100 seconds of processing time.
+Still doable comfortably and the answer is **1900**.
 
-But with the block size of 256 - Wine's original - the number of
-combos is 18! => 213412456 seconds or about 82 months. No bueno.
+But with the block size of 256 - Wine's original - the number 
+grows to 18! or 130000000 seconds or about 49 months. No bueno.
 
-### Heuristics
+### Heuristic search
 
-The second approach is to try and *construct* block sequences,
-seemingly intelligently.
+Another approach is to try and *construct* block sequences, in 
+a seemingly intelligent way.
 
 It just happens that underlying N x N matrices (of graph edge
-weights) show some well-pronounced patterns, so a fairly simple 
-approach goes a long way.
+weights) show some well-pronounced patterns - there are 
+zero-filled rows and columns, non-zero cells are either rather 
+large or fairly small with nothing in between, etc. This appears
+to help getting decent results from simpler "logical" guesses.
 
-The gist of it is that we pick the most squishable pair and then 
-keep adding blocks that squish the best with it either at the
-front or at the back.
+For example, if we pick the most squishable pair of blocks and 
+then keep adding blocks that squish the best with it either at 
+the front or at the back, we will arrive at a squish of **972**.
+A decent improvement over Wine's original of **742**.
 
-For the block size of 256 this yields a maximum squish of **972**
-compared to the Wine's original **742**.
+We can check how *just* appending or *just* prepending fares 
+in comparison.
 
-Secondly, when faced with equally-good appending/prepending
-options, we can check if preferring one or another gives 
-better results.
+We can also *prefer* either appending or prepending when both
+would yield the same improvement.
 
-Thirdly, we can check how *just* appending or *just* prepending
-fares in comparison.
+We can construct our block sequence out of *multiple parts*.
+That is, our assembly loop will be making a choice between 
+(1) adding a block to an existing part (2) merging two parts
+with a block or (3) starting yet another part.
 
-Fourthly, we can construct a sequence out of multiple parts
-with our loop basically making a choice between (1) adding a
-block to an existing part (2) merging two parts with a block
-or (3) starting yet another part.
+Then, once we have our sequence we can check if splitting it
+at some item and swapping the parts would yield a better squish.
 
-Combining all these together we are looking at a "heuristical"
-search space of several thousand options. Combining through
-it gets us this:
+Similarly, we can see if moving some item to another spot or
+swapping it with another item would also be beneficial.
 
-    xx
+These are basically random guesses, but it turns out that for
+whatever magical reason they *do* work when tried as a group.
+
+In fact, they work so well that they manage to find the exact
+solution for 512 and 1024 block sizes. A surprise, to be sure,
+but a welcome one.
+
+Summarized, the results are as follows:
+
+    Block size       Max exact squish     Heuristic squish    Zero-block squish
+
+      1024                  2861                2861                1757
+       512                  1900                1900                1101
+       256                    ?                 1244                 742
+       128                    ?                 1113                 539
+	64                    ?                  965                 578
+	32                    ?                  628                 345
+	16                    ?                  387                 187
 
 ### Randomized shuffling
 
 In addition to "educated guesses" we can also try something as
-dumb as randomized shuffling. On a desktop machine a fairly basic
-code can run 10-50 million checks a second.
+enlightened as randomized shuffling. This runs around 10x slower 
+than the permutation search and in an overnight test it didn't 
+manage to improve upon the heuristic solutions. So there's that.
 
-So we just let it run for a while and see if it manages to 
-find any better combos. Surprisingly, it does and just in a
-matter of a couple of hours.
+### The results
 
-### A + B
-
-With both methods combined here are the results:
-
-    Block size  |     Overlap      |     Table size     |     Total size
+    Block size  |      Squish      |       Deltas      |   Deltas + index
                                              
-    *  1024        1757  -> 2861       8483  ->  4582       8547  ->  7443
-    *   512        1101  -> 1900       5555  ->  4756       5683  ->  4884
-    *   256         742  -> 1241       3866  ->  3367       4122  ->  3623
-        128         539  -> 1038       3045  ->  2546       3557  ->  3058
-         64         578  ->  887       2238  ->  1929       3262  ->  2953   <-  the smallest
-         32         345  ->  599       1415  ->  1161       3463  ->  3209
-         16         187  ->  369        869  ->   687       4965  ->  4783
-	 
-Results marked with `*` are from randomized shuffling and
-the rest is from heuristic guessing.
+       1024        1757  -> 2861       8483  ->  7379      8547  ->  7443
+        512        1101  -> 1900       5555  ->  4756      5683  ->  4884
+        256         742  -> 1241       3866  ->  3367      4122  ->  3623   <-  the original
+        128         539  -> 1083       3045  ->  2501      3557  ->  3013
+         64         578  ->  894       2238  ->  1922      3262  ->  2946   <-  the smallest
+         32         345  ->  600       1415  ->  1160      3463  ->  3208
+         16         187  ->  369        869  ->   687      4965  ->  4783
 
-The best compression is achieved with the combination of a
-smaller block size and the reshuffling. The smallest table 
-is **2953** items long or about **28%** smaller than the original.
+The best compression is achieved with the combination of a smaller block
+size and the reshuffling. The smallest table is **2946** items or about
+**28%** smaller than the original.
 
-## Separate index
+## Use separate index
 
 The table size can be reduced a bit more by noticing that we have 
-fewer than 256 unique index entries. So the index can be built as
-`uint8_t[]` instead of `uint16_t[]`.
+fewer than **256** unique index entries. So the index can be built 
+as `uint8_t[]` instead of `uint16_t[]`.
 
 However this requires using a secondary index as such:
 
@@ -418,15 +429,25 @@ However this requires using a secondary index as such:
     
 When applied, this change yields the following total byte counts:
 
-    Block size  |  Index[]  |   Offsets[]   |   Deltas[]   |  Total bytes
+    Block size  |  Index[]   |   Offsets[]   |   Deltas[]   |  Total bytes
 				     		    	       
-      1024            64    +    10 x 2     +   4582 x 2   =     9248
-       512           128    +    13 x 2     +   4756 x 2   =     9666
-       256           256    +    18 x 2     +   3367 x 2   =     7026
-       128           512    +    28 x 2     +   2546 x 2   =     5660
-        64          1024    +    44 x 2     +   1929 x 2   =     4970
-        32          2048    +    55 x 2     +   1161 x 2   =     4480   <-  chicken dinner
-        16          4096    +    66 x 2     +    687 x 2   =     5602
+      1024            64     +    10 x 2     +   7379 x 2   =    14842
+       512           128     +    13 x 2     +   4756 x 2   =     9666
+       256           256     +    18 x 2     +   3367 x 2   =     7026
+       128           512     +    28 x 2     +   2501 x 2   =     5602
+        64          1024     +    44 x 2     +   1922 x 2   =     4956
+        32          2048     +    55 x 2     +   1160 x 2   =     4478   <-  4.4 KB
+        16          4096     +    66 x 2     +    687 x 2   =     5602
+	
+## Compress the index
+
+For smaller blocks sizes we have large indexes.
+
+These indexes will also have **a lot of redundancy** - the 2048 item
+index will have only 55 unique values and the 4096 one - only 66.
+
+This sounds familiar, doesn't it? We again face a highly redundant
+array, so we can ... *drumroll* ... compress it the exact same way!
 
 ## In other words
 
