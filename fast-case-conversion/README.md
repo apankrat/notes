@@ -1,5 +1,5 @@
-# Fast character case conversion ...
-## ... or how to *really* compress a sparse array
+# Fast character case conversion
+## * or how to *really* compress redundant arrays
 
 Converting strings and characters between lower and upper cases is a very 
 common need.
@@ -11,7 +11,8 @@ as a part of data container lookups and content manipulation.
 So it is usually desirable to make case conversions as fast as possible.
 
 In this post we are going to look at one of the options - very fast 
-case conversion using **compressed lookup tables**.
+case conversion using **indexed lookup tables**, which will drag us down 
+a little rabbit hole of **compression of highly redundant arrays**.
 
 If in rush, you can jump straight to the [Conclusion](#Conclusion).
 
@@ -80,6 +81,7 @@ A lookup table for the UTF-16 case requires 2 x 65536 bytes per
 case, 256KB in total.
 
 Both tables will also be *very* sparse with just 2% of a non-trivial fill.
+Put differently, the tables will have a very high level of *redundancy*.
 
 Which brings us to the **interesting part** - how can we compress these
 tables without sacrificing the speed of lookups?
@@ -100,7 +102,7 @@ Two bit operations, two additions and two memory references.
 
 The `casemap_lower` table lives in
 [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
-and it is quite incredibly just 8KB is size:
+and it is quite incredibly **just 8KB is size**:
 
     const wchar_t wine_casemap_lower[4122] = { ... }
 
@@ -163,7 +165,7 @@ So here's what's going on:
     size of the index. This is already excellent - around 10K 
     instead of 128K - but it can be compressed further.
     
- 4. Another insight is that remaining blocks still contain a lot
+ 4. Next insight is that remaining blocks still contain a lot
     of zeroes. More specifically, one block may *end* with lots 
     of zeroes and the next onemay *start* with a lot of them.
     
@@ -230,16 +232,16 @@ So here's what's going on:
    So we find a pair of blocks that have a large *zero-filled*
    overlap and we place our zero-filled block between them.
    
-   Wine places this block seventh and after a squish this
-   brings table size down to **3866** entries.
+   Wine places this block in the 7th spot and after a squish
+   this brings table size down to **3866** entries.
 
 6. Finally, the index and the table are merged into a single array.
     
-   The `casemap_lower[]` comprises two distinct parts.
-   It starts with 256 index entries, followed by 3866 
-   deltas, to the grand total of **4122**.
+   The `casemap_lower[]` comprises two distinct parts. It starts
+   with 256 index entries, followed by 3866 deltas, to the grand 
+   total of **4122**.
     
-   Going back to the `towlower()` code -
+   Looking back to the `towlower()` code -
     
         ...
         return ch + casemap_lower[casemap_lower[ch >> 8] + (ch & 0xff)];
@@ -248,14 +250,14 @@ So here's what's going on:
    start in the data section, followed by the retrieval of ch's delta value 
    within the block at the offset of `ch & 0xff`.
  
-Marvelous, isn't it?
+Nice, isn't it?
 
 If you know the origins of this technique (or its author!), let me know
 and I'll add a proper reference.
    
-# Table compression, revised
+# But wait...
 
-But wait! We can do better.
+We can do better.
 
 ## Use smaller blocks
  
@@ -279,7 +281,7 @@ number of block pairs will be smaller.
          32     x       55      =     1760    -    345    =    1415    
          16     x       66      =     1056    -    187    =     869    
 
-The last columns is the number of items in the table. But let's not 
+The last column is the number of items in the table. But let's not 
 forget the index:
 
     Block size  |  Index size  |  Table size  |  Total size
@@ -292,7 +294,7 @@ forget the index:
          32           2048     +     1415     =     3463
          16           4096     +      869     =     4965
  
- That is, reducing the block size to 64 bytes we can compress the
+ That is, reducing the block size to 64 deltas we can compress the
  table down to 3262 items (**6516 bytes**). This is 21% reduction
  compared to the original of 4122 (or 8244 bytes).
  
@@ -307,8 +309,8 @@ In addition to finding the best spot for the zero-filled block,
 we can try and shuffle **all** blocks around and look for the 
 most squishable combination.
 
-If we are to squint a bit, this search will sure look like
-a form of the
+If we squint and abstract a bit, this search will sure look 
+suspiciously like the
 [Travelling Salesman Problem](https://en.wikipedia.org/wiki/Travelling_salesman_problem),
 meaning no shortcuts and a rather unpleasant running time.
 
@@ -318,11 +320,11 @@ weighted graph.
 
 ### Full search
 
-For smaller block counts we can just brute-force our way through
-all possible block permutations.
+For larger block sizes we can just brute-force our way through
+all possible block permutations, because the *count* of unique
+blocks will be manageable.
 
-With a bit of optimization it's possible to run at ~ 50M checks
-per second. 
+A moderately optimized code run do around 50M checks per second.
 
 With the block size of 1024 we have 10 unique blocks. That's 10!
 or 3,628,800 permutations, which take 0.1 sec to process and get
@@ -330,26 +332,30 @@ to the answer - **2861**.
 
 With the block size of 512 we have 13 unique blocks - that's 
 6,227,020,800 permutations or ~ 100 seconds of processing time.
-Still doable comfortably and the answer is **1900**.
+Still doable and the answer is **1900**.
 
 But with the block size of 256 - Wine's original - the number 
-grows to 18! or 130000000 seconds or about 49 months. No bueno.
+grows to 18! or 130000000 seconds, which is about 49 months.
+No bueno.
 
 ### Heuristic search
 
-Another approach is to try and *construct* block sequences, in 
-a seemingly intelligent way.
+Another approach is to try and *construct* block sequences in 
+a pseudo-intelligent way.
 
 It just happens that underlying N x N matrices (of graph edge
 weights) show some well-pronounced patterns - there are 
 zero-filled rows and columns, non-zero cells are either rather 
 large or fairly small with nothing in between, etc. This appears
-to help getting decent results from simpler "logical" guesses.
+to help getting decent results even from basic "logical" guesses.
 
-For example, if we pick the most squishable pair of blocks and 
-then keep adding blocks that squish the best with it either at 
-the front or at the back, we will arrive at a squish of **972**.
-A decent improvement over Wine's original of **742**.
+For example, we can pick the most squishable pair of blocks and 
+then keep prepending and appending blocks that squish the best 
+with it.
+
+This alone will yield a squish of **972** for Wine's original 
+256 block size - a decent improvement over **742** of the original
+block sequence.
 
 We can check how *just* appending or *just* prepending fares 
 in comparison.
@@ -357,22 +363,22 @@ in comparison.
 We can also *prefer* either appending or prepending when both
 would yield the same improvement.
 
-We can construct our block sequence out of *multiple parts*.
-That is, our assembly loop will be making a choice between 
-(1) adding a block to an existing part (2) merging two parts
-with a block or (3) starting yet another part.
+We can also construct our block sequence out of *multiple parts*.
+That is, our assembly loop will be making a choice between (1) 
+adding a block to an existing part (2) merging two parts with 
+a block or (3) starting yet another part.
 
 Then, once we have our sequence we can check if splitting it
-at some item and swapping the parts would yield a better squish.
+into two parts and swapping them would yield a better squish.
 
-Similarly, we can see if moving some item to another spot or
-swapping it with another item would also be beneficial.
+Similarly, we can see if moving an item to another spot or
+swapping it with another item would increase a squish.
 
-These are basically random guesses, but it turns out that for
+These are essentially random guesses, but it turns out that for
 whatever magical reason they *do* work when tried as a group.
 
 In fact, they work so well that they manage to find the exact
-solution for 512 and 1024 block sizes. A surprise, to be sure,
+solution for 1024 and 512 block sizes. A surprise, to be sure,
 but a welcome one.
 
 Summarized, the results are as follows:
@@ -390,9 +396,9 @@ Summarized, the results are as follows:
 ### Randomized shuffling
 
 In addition to "educated guesses" we can also try something as
-enlightened as randomized shuffling. This runs around 10x slower 
-than the permutation search and in an overnight test it didn't 
-manage to improve upon the heuristic solutions. So there's that.
+enlightened as randomized shuffling. Alas in an overnight test
+it didn't manage to improve upon the heuristic solutions for 
+any of the block sizes. So there's that.
 
 ### The results
 
@@ -407,8 +413,8 @@ manage to improve upon the heuristic solutions. So there's that.
          16         187  ->  369        869  ->   687      4965  ->  4783
 
 The best compression is achieved with the combination of a smaller block
-size and the reshuffling. The smallest table is **2946** items or about
-**28%** smaller than the original.
+size and the reshuffling. The smallest table is **2946** items long or
+about **28%** smaller than the original.
 
 ## Use separate index
 
@@ -427,27 +433,40 @@ However this requires using a secondary index as such:
     
     ch = deltas[offset + (ch & 0x3f) ];
     
-When applied, this change yields the following total byte counts:
+Or, if using Wine's trick of merging arrays, it will be:
 
-    Block size  |  Index[]   |   Offsets[]   |   Deltas[]   |  Total bytes
+    uint8_t   index[1024]      = { ... };
+    uint16_t  casemap[44+1929] = { ... };
+    uint16_t  offset_i = index[ ch >> 6 ];
+
+    ch = casemap[ casemap[offset_i] + (ch & 0x3f) ];
+
+With this reduction in place, here are new byte counts:
+
+    Block size  |  Index   |   Offsets + Deltas   |  Total bytes
 				     		    	       
-      1024            64     +    10 x 2     +   7379 x 2   =    14842
-       512           128     +    13 x 2     +   4756 x 2   =     9666
-       256           256     +    18 x 2     +   3367 x 2   =     7026
-       128           512     +    28 x 2     +   2501 x 2   =     5602
-        64          1024     +    44 x 2     +   1922 x 2   =     4956
-        32          2048     +    55 x 2     +   1160 x 2   =     4478   <-  4.4 KB
-        16          4096     +    66 x 2     +    687 x 2   =     5602
+      1024           64    +    (10 + 7379) x 2   =    14842
+       512          128    +    (13 + 4756) x 2   =     9666
+       256          256    +    (18 + 3367) x 2   =     7026
+       128          512    +    (28 + 2501) x 2   =     5602
+        64         1024    +    (44 + 1922) x 2   =     4956
+        32         2048    +    (55 + 1160) x 2   =     4478   <-  4.4 KB
+        16         4096    +    (66 +  687) x 2   =     5602
 	
 ## Compress the index
 
 For smaller blocks sizes we have large indexes.
 
-These indexes will also have **a lot of redundancy** - the 2048 item
-index will have only 55 unique values and the 4096 one - only 66.
+These indexes will also have *a lot of redundancy*.
 
-This sounds familiar, doesn't it? We again face a highly redundant
-array, so we can ... *drumroll* ... compress it the exact same way!
+The index for the block size of 32 is **2048 items** with only
+**55** uniques and the index for the block size of 16 is
+**4096 items** with only **66** uniques.
+
+This looks awfully familiar.
+
+We again face a highly redundant array, which we can ... 
+*drumroll* ... compress it the exact same way!
 
 ## In other words
 
