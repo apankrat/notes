@@ -383,15 +383,15 @@ but a welcome one.
 
 Summarized, the results are as follows:
 
-    Block size       Max exact squish     Heuristic squish    Zero-block squish
+    Block size    Max exact squish    Heuristic squish    Zero-block squish
 
-      1024                  2861                2861                1757
-       512                  1900                1900                1101
-       256                    ?                 1244                 742
-       128                    ?                 1113                 539
-	64                    ?                  965                 578
-	32                    ?                  628                 345
-	16                    ?                  387                 187
+      1024               2861               2861                1757
+       512               1900               1900                1101
+       256                  ?               1244                 742
+       128                  ?               1113                 539
+        64                  ?                965                 578
+        32                  ?                628                 345
+        16                  ?                387                 187
 
 ### Randomized shuffling
 
