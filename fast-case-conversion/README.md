@@ -22,7 +22,7 @@ The simplest way to do the case conversion is with a lookup table:
 
     const char to_lower[256] = { ... }; // lower case versions of every character
     const char to_upper[256] = { ... }; // upper case versions of every character
-  
+    
     char a = to_lower[ 'A' ];
     char Z = to_upper[ 'z' ];
     ...
@@ -253,7 +253,7 @@ Nice, isn't it?
 If you know the origins of this code (or its author!), let me know and 
 I'll add a proper reference. It feels like something that should've been
 really well researched back in the 1970s if not earlier.
-   
+
 # But wait...
 
 We can do better.
@@ -271,7 +271,7 @@ The "squish potential" will also increase with the block size, but
 the number of block pairs will be smaller.
 
     Block size  |  Used blocks  |   Items   |  Squish  |  Data size
-
+    
        2048     x        8      =   16384   -   4629   =   11755                                                                     
        1024     x       10      =   10240   -   1757   =    8483    
         512     x       13      =    6656   -   1101   =    5555    
@@ -280,15 +280,15 @@ the number of block pairs will be smaller.
          64     x       44      =    2816   -    578   =    2238    
          32     x       55      =    1760   -    345   =    1415    
          16     x       66      =    1056   -    187   =     869
-	  8     x       75      =     600   -    109   =     491
-	  4     x       78      =     312   -     40   =     272
-	  2     x       81      =     162   -      0   =     162       <- unsquishable
+          8     x       75      =     600   -    109   =     491
+          4     x       78      =     312   -     40   =     272
+          2     x       81      =     162   -      0   =     162       <- unsquishable
 
 The last column is the number of items in the table. But let's not 
 forget the index:
 
     Block size  |  Index size  |  Data size  |  Total size
-       
+    
        2048             32     +    11755    =    11785
        1024             64     +     8483    =     8547
         512            128     +     5555    =     5683
@@ -297,18 +297,18 @@ forget the index:
          64           1024     +     2238    =     3262       <-  the smallest
          32           2048     +     1415    =     3463
          16           4096     +      869    =     4965
-	  8           8192     +      491    =     8683
-	  4          16384     +      272    =    16656
-	  2          32768     +      162    =    32930
- 
- That is, by reducing the block size to 64 items we can compress 
- the table down to 3262 items (**6516 bytes**). This is 21% 
- reduction compared to the original of 4122 (or 8244 bytes).
- 
- The conversion function itself will look like so:
- 
-     ...
-     return ch + casemap_lower[casemap_lower[ch >> 6] + (ch & 0x3f)];
+          8           8192     +      491    =     8683
+          4          16384     +      272    =    16656
+          2          32768     +      162    =    32930
+
+That is, by reducing the block size to 64 items we can compress 
+the table down to 3262 items (**6516 bytes**). This is 21% 
+reduction compared to the original of 4122 (or 8244 bytes).
+
+The conversion function itself will look like so:
+
+    ...
+    return ch + casemap_lower[casemap_lower[ch >> 6] + (ch & 0x3f)];
 
 ## Rearranging blocks
 
@@ -391,7 +391,7 @@ solution for 2048, 1024 and 512 block sizes.
 When used against other blocks sizes, this is the output:
 
     Block size    Max exact squish    Heuristic squish    Zero-block squish
-
+    
       2048              5344                5344                4629
       1024              2861                2861                1757
        512              1900                1900                1101
@@ -401,8 +401,8 @@ When used against other blocks sizes, this is the output:
         32                 ?                 628                 345
         16                 ?                 387                 187
          8                 ?                 224                 109
-	 4                 ?                  86                  40
-	 2                 ?                   0                   0
+         4                 ?                  86                  40
+         2                 ?                   0                   0
 
 ### Randomized shuffling
 
@@ -416,7 +416,7 @@ any of the block sizes.
 Here's the tally up of our block reshuffling efforts:
 
     Block size  |  Best squish  |    Items    |    Index    |   Total
-                                                               
+    
        2048            5344     ->   11040    +       32    =   11072
        1024            2861     ->    7379    +       64    =    7443
         512            1900     ->    4756    +      128    =    4884
@@ -445,7 +445,7 @@ However this requires using a secondary index like so:
     uint8_t   index[1024] = { ... };
     uint16_t  offsets[44] = { ... };
     uint16_t  items[1851] = { ... };
-
+    
     uint16_t  block_offset = offsets[ index[ ch >> 6 ] ];
     
     ch = items[block_offset + (ch & 0x3f) ];
@@ -454,13 +454,13 @@ Or, using in the style of Wine's merged array:
 
     uint8_t   index[1024]      = { ... };
     uint16_t  casemap[44+1851] = { ... };
-
+    
     ch = casemap[ casemap[ index[ ch >> 6 ] ] + (ch & 0x3f) ];
 
 With this reduction in place, here are the new byte counts:
 
     Block size  |  Index   |    Offsets + Items     |  Total bytes
-    						    
+    
        2048           32   +    ( 8 + 11040) x 2    =    22128
        1024           64   +    (10 +  7379) x 2    =    14842
         512          128   +    (13 +  4756) x 2    =     9666
@@ -480,15 +480,15 @@ relatively small number of unique values.
 
 We can also do it in two ways.
 
-A) The output is a single 16-bit array and the retrieval
-function is `arr[ arr[ch >> ...] + (ch & 0x...) ]`
+A) With two 16-bit arrays, stored together, and the retrieval
+function of `arr[ idx[ch >> ...] + (ch & 0x...) ]`
 
 ![Single index](single-index.png)
 
     2 bit ops, 1 addition, 2 memory references
 
-B) The output is a pair of 8- and 16-bit arrays and the 
-function is `arr[ arr[ idx[ch >> ...] ] + (ch & 0x...) ]`
+B) With two 16-bit arrays and an 8-bit one, with the retrieval
+function of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
 
 ![Single index ex](single-index-ex.png)
 
@@ -497,7 +497,7 @@ function is `arr[ arr[ idx[ch >> ...] ] + (ch & 0x...) ]`
 The best compression of our original `tolower` lookup table 
 is **5750** bytes with A and **4422** bytes with B.
 
-But we still can compress more.
+But we can do better still.
 
 ## Compressing the index
 
