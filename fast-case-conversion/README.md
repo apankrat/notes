@@ -499,7 +499,7 @@ is **5750 bytes** with A and **4422 bytes** with B.
 
 But we can do better still.
 
-## Compressing the index
+## Taking care of index
 
 Smaller blocks sizes will have larger indexes that, most notably, 
 will have **very** few distinct entries.
@@ -513,7 +513,7 @@ A large array with massive redundancy. This looks ... *familiar*.
 So what do we do with it? Compress it but of course!
 
 Not to confuse things, we'll refer to the index of this new compression
-as **j**ndex and its blocks as **sequences**.
+as **jndex** and its blocks as **sequences**.
 
 For each *block* size we take its index and iterate through different
 *sequence* sizes looking for the most compressible one. Here are the
