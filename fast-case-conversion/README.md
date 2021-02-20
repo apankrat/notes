@@ -429,8 +429,8 @@ Here's the tally up of our block reshuffling efforts:
           4              86     ->     226    +    16384    =   16610
           2               0     ->     162    +    32768    =   32930
 
-We are now down to **2875** items for a Wine-style lookup table, about 
-**30%** smaller than the original.
+We are now down to **2875** items for a Wine-style lookup table, which
+is **5750 bytes** or ~ **30%** smaller than the original.
 
 ## Separating the index
 
@@ -492,7 +492,7 @@ function of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
 
 ![Single index ex](single-index-ex.png)
 
-    2 bit ops, 2 additions, 3 memory references
+    2 bit ops, 1 addition, 3 memory references
 
 The best compression of our original `tolower` lookup table 
 is **5750** bytes with A and **4422** bytes with B.
@@ -513,32 +513,122 @@ This... sounds familiar. So what do we do?
 
 We compress the index, but of course!
 
-...
+Once compressed, we'll refer to the index of this new compression
+as **j**ndex and resulting blocks as **sequences**. After iterating 
+over available sequence sizes, we will arrive at the following:
 
 
+    Index size  |  Uniques  |  ---------------  Best compression  -------------  |
+                               Jndex size  |  Seq size  |  Unique seq  |  Items
+    
+         32            8              8            4            5           16
+         64           10              8            8            5           27
+        128           13             16            8            6           35
+        256           18             32            8            8           46
+        512           28             32           16            8           88
+       1024           44             64           16           10          119
+       2048           55            128           16           13          151
+       4096           66            128           32           13          299
+       8192           75            256           32           18          424           
+      16384           78            256           64           18          843
+      32768           81            512           64           28         1240
 
+As expected, the index compresses *really* well. The next question is how to encode it.
+
+### Single array
+
+First option is an extension of Option A above. This is simpler and faster to
+access, but it's a bit wasteful because all arrays are `uint16_t`.
+
+![Double index](double-index.png)
+
+    4 bit ops, 2 additions, 3 memory references
+
+The byte counts are as follows:
+
+    Index size  |       Index compressed       |  Data compressed  |  Items  |  Bytes
+                    Jndex  |  Items  |  Total
+    
+         32           8    +    16   =    24   +       11040       =  11064     22128
+         64           8    +    27   =    35   +        7379       =   7414     14828
+        128          16    +    35   =    51   +        4756       =   4807      9614
+        256          32    +    46   =    78   +        3364       =   3442      6884
+        512          32    +    88   =   120   +        2471       =   2591      5182
+       1024          64    +   119   =   183   +        1851       =   2034      4068
+       2048         128    +   151   =   279   +        1132       =   1411      2822
+       4096         128    +   299   =   427   +         669       =   1096      2192
+       8192         256    +   424   =   680   +         376       =   1056      2112  <--  ha
+      16384         256    +   843   =  1099   +         226       =   1325      2650
+      32768         512    +  1240   =  1752   +         162       =   1914      3828
+
+That is, this takes us down to **2112 bytes**.
+
+### Five arrays
+
+The second option is to penny-pinch bytes by using a separate `offsets` array, just
+like in the Option B.
+
+![Double index](double-index-ex.png)
+
+    4 bit ops, 2 additions, 5 memory references
+
+This reduces the overall byte count as follows:
+
+    Index size  |        Index compressed        |   Data compressed  |  Bytes
+                    Jndex  |  Uniques  |  Items
+    
+         32           8    +    5      +     16  +  ( 8 + 11040) x 2  =  22125
+         64           8    +    5      +     27  +  (10 +  7379) x 2  =  14818
+        128          16    +    6      +     35  +  (13 +  4756) x 2  =   9595
+        256          32    +    8      +     46  +  (18 +  3364) x 2  =   6850
+        512          32    +    8      +     88  +  (28 +  2471) x 2  =   5126
+       1024          64    +   10      +    119  +  (44 +  1851) x 2  =   3983
+       2048         128    +   13      +    151  +  (55 +  1132) x 2  =   2666
+       4096         128    +   13 x 2  +    299  +  (66 +   669) x 2  =   1923
+       8192         256    +   18 x 2  +    424  +  (75 +   376) x 2  =   1618  <--  HA
+      16384         256    +   18 x 2  +    843  +  (78 +   226) x 2  =   1743
+      32768         512    +   28 x 2  +   1240  +  (81 +   162) x 2  =   2294
+
+And with this trickery we are now down to just **1618 bytes**.
 
 ## In other words
 
 If we prefer to use Wine's original lookup code, we can reduce 
-the table size from **8244** to **7026** bytes, a reduction of ~ **14%**.
+the table size from **8244** to **5750 bytes**, a reduction of
+~ **30%**.
 
 If we are OK with using an extra memory reference, we can
-further shrink the table to **4480** bytes, a reduction of ~ **45%**.
+further shrink the table to **4422 bytes**, a reduction of 
+~ **45%**.
 
-Either way this is still just a cherry on top of an already 
-excellent compression technique.
+If we add two more bit operations and one addition, we can
+have the table down to **2121 bytes**, a reduction of 
+~ **74%**.
+
+Finally, if we splurge on 2 more memory references, the table
+size can be reduced to **1618 bytes**, a reduction of
+~ **80%**.
+
+Pick your poison.
 
 # Conclusion
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
-table of between 4.4KB to 8KB in size.
+table of between 1.6KB to 8KB in size.
 
 The 8KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
 
-The 4.4KB version, as per above:
+The 4.3KB version:
+* x
+* z
+
+The 2.1KB version:
+* x
+* z
+
+The 1.6KB version:
 * x
 * z
