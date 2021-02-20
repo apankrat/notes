@@ -302,7 +302,7 @@ forget the index:
           2          32768     +      162    =    32930
 
 That is, by reducing the block size to 64 items we can compress 
-the table down to 3262 items (**6516 bytes**). This is 21% 
+the table down to 3262 items (**6516 bytes**). This is ~ **21%**
 reduction compared to the original of 4122 (or 8244 bytes).
 
 The conversion function itself will look like so:
@@ -495,50 +495,53 @@ function of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
     2 bit ops, 1 addition, 3 memory references
 
 The best compression of our original `tolower` lookup table 
-is **5750** bytes with A and **4422** bytes with B.
+is **5750 bytes** with A and **4422 bytes** with B.
 
 But we can do better still.
 
 ## Compressing the index
 
-Smaller blocks sizes will have larger indexes.
+Smaller blocks sizes will have larger indexes that, most notably, 
+will have **very** few distinct entries.
 
-These indexes will also have *very* few distinct entries.
+The index for the block size of 32 is **2048 entries** with only
+**55** uniques and the index for the block size of 4 is **16384
+entries** with only **78** uniques.
 
-The index for the block size of 32 is **2048 items** with only
-**55** uniques and the index for the block size of 16 is **4096 
-items** with only **66** uniques.
+A large array with massive redundancy. This looks ... *familiar*.
 
-This... sounds familiar. So what do we do?
+So what do we do with it? Compress it but of course!
 
-We compress the index, but of course!
+Not to confuse things, we'll refer to the index of this new compression
+as **j**ndex and its blocks as **sequences**.
 
-Once compressed, we'll refer to the index of this new compression
-as **j**ndex and resulting blocks as **sequences**. After iterating 
-over available sequence sizes, we will arrive at the following:
+For each *block* size we take its index and iterate through different
+*sequence* sizes looking for the most compressible one. Here are the
+results:
 
-
-    Index size  |  Uniques  |  ---------------  Best compression  -------------  |
-                               Jndex size  |  Seq size  |  Unique seq  |  Items
+    Index size  |  Uniques  |  ---------------  Best compression  --------------  |
+                               Jndex size  |  Seq size  |  Unique seqs  |  Items
     
-         32            8              8            4            5           16
-         64           10              8            8            5           27
-        128           13             16            8            6           35
-        256           18             32            8            8           46
-        512           28             32           16            8           88
-       1024           44             64           16           10          119
-       2048           55            128           16           13          151
-       4096           66            128           32           13          299
-       8192           75            256           32           18          424           
-      16384           78            256           64           18          843
-      32768           81            512           64           28         1240
+         32            8              8            4            5            16
+         64           10              8            8            5            27
+        128           13             16            8            6            35
+        256           18             32            8            8            46
+        512           28             32           16            8            88
+       1024           44             64           16           10           119
+       2048           55            128           16           13           151
+       4096           66            128           32           13           299
+       8192           75            256           32           18           424           
+      16384           78            256           64           18           843
+      32768           81            512           64           28          1240
 
-As expected, the index compresses *really* well. The next question is how to encode it.
+`Jndex size` and `Items` columns give us the compressed index size. As expected,
+the index compresses *really* well. The next question is how to encode it.
 
-### Single array
+### Three arrays
 
-First option is an extension of Option A above. This is simpler and faster to
-access, but it's a bit wasteful because all arrays are `uint16_t`.
+One way to encode compressed index and our data table is an extension of Option 
+A. This is simpler and faster to access, but it's a bit wasteful because all arrays 
+are `uint16_t`.
 
 ![Double index](double-index.png)
 
@@ -589,25 +592,21 @@ This reduces the overall byte count as follows:
       16384         256    +   18 x 2  +    843  +  (78 +   226) x 2  =   1743
       32768         512    +   28 x 2  +   1240  +  (81 +   162) x 2  =   2294
 
-And with this trickery we are now down to just **1618 bytes**.
+That is, with this trickery we are now down to just **1618 bytes**.
 
 ## In other words
 
-If we prefer to use Wine's original lookup code, we can reduce 
-the table size from **8244** to **5750 bytes**, a reduction of
-~ **30%**.
+If we prefer to use Wine-style lookup code, we can reduce the 
+table size from **8244** to **5750 bytes**, a reduction of ~ **30%**.
 
 If we are OK with using an extra memory reference, we can
-further shrink the table to **4422 bytes**, a reduction of 
-~ **45%**.
+shrink the table to **4422 bytes**, a reduction of ~ **45%**.
 
 If we add two more bit operations and one addition, we can
-have the table down to **2121 bytes**, a reduction of 
-~ **74%**.
+have the table down to **2121 bytes**, a reduction of ~ **74%**.
 
 Finally, if we splurge on 2 more memory references, the table
-size can be reduced to **1618 bytes**, a reduction of
-~ **80%**.
+size can be reduced to **1618 bytes**, a reduction of ~ **80%**.
 
 Pick your poison.
 
@@ -615,7 +614,7 @@ Pick your poison.
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be implemented in a handful of CPU cycles and a precomputed lookup
-table of between 1.6KB to 8KB in size.
+table sized between 1.6KB to 8KB in size.
 
 The 8KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
