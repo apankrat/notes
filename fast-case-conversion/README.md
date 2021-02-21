@@ -134,16 +134,15 @@ So here's what's going on:
         ...
        block FF - [256 entries for values FF00 to FFFF]
     
-3. Once this is done, we may notice that only 17 blocks have something
-   else but all zeroes:
+3. Once this is done, we may notice that only 17 blocks have are *not*
+   completely zero-filled. These blocks are:
    
        00, 01, 02, 03, 04, 05, 10, 13, 1C, 1E, 1F, 21, 24, 2C, A6, A7, FF
    
-   Remaining 239 blocks will be all full of zeroes.
+   Remaining 239 blocks will contain just zeroes and nothing else.
    
-   So we can store just these 17 blocks plus a zero-filled block and 
-   then use an **index**  to map block's ID to its actual data in
-   the table:
+   So we can store just these 17 blocks plus a zero-filled block and then 
+   use an **index**  to map block's ID to its actual data in the table:
    
        Index                     |   Table
        --------------------------+-------------------------------------------
@@ -158,9 +157,9 @@ So here's what's going on:
        FExx  ->  1200 (zeroes)   |
        FFxx  ->  1100            |
 
-    This compresses table down to **4608** items (18 x 256) + the
-    size of the index. This is already excellent - around 10K 
-    instead of 128K - but it can be compressed further.
+    This compresses table down to **4608** items (18 x 256) + the size of 
+    the index. This is already excellent - around 10K instead of 128K - 
+    but it can be compressed further.
     
  4. Next insight is that remaining blocks still contain a lot
     of zeroes. More specifically, one block may *end* with lots 
@@ -614,11 +613,11 @@ Pick your poison.
 
 Very fast case conversion of (the vast majority of) Unicode characters
 can be done with a handful of CPU cycles and static precomputed lookup 
-tables sized between 1.6KB to 8KB in size.
+tables sized between 1.6KB to 8.6KB in size.
 
 The 8.6KB version, courtesy of Wine:
-* [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
+* [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 
 Recompressed versions of `tolower` tables:
 
