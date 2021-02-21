@@ -112,7 +112,7 @@ Very fast, beautifully terse and, at the first glance, mysterious. Here's how it
 Both `tolower` and `toupper` tables are compressed the same way, so we'll
 just look at the compression of the former.
 
-There are 1158 conversion rules and they are listed [here](to-lower-table.txt).
+There are 1158 conversion rules and they are listed [here](tolower-table.txt).
 
 So here's what's going on:
 
@@ -620,14 +620,10 @@ The 8KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
 
-The 4.3KB version:
-* x
-* z
+Recompressed versions:
+* 5.6KB - [best_5750.c](best_5750.c)
+* 4.3KB - [best_4422.c](best_4422.c)
+* 2.1KB - [best_2112.c](best_2112.c)
+* 1.6KB - [best_1618.c](best_1618.c)
 
-The 2.1KB version:
-* x
-* z
 
-The 1.6KB version:
-* x
-* z
