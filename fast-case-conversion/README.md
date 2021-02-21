@@ -613,17 +613,24 @@ Pick your poison.
 # Conclusion
 
 Very fast case conversion of (the vast majority of) Unicode characters
-can be implemented in a handful of CPU cycles and a precomputed lookup
-table sized between 1.6KB to 8KB in size.
+can be done with a handful of CPU cycles and static precomputed lookup 
+tables sized between 1.6KB to 8KB in size.
 
-The 8KB version, courtesy of Wine:
+The 8.6KB version, courtesy of Wine:
 * [unicode.h](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/include/wine/unicode.h#L93)
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
 
-Recompressed versions:
-* 5.6KB - [best_5750.c](best_5750.c)
-* 4.3KB - [best_4422.c](best_4422.c)
-* 2.1KB - [best_2112.c](best_2112.c)
-* 1.6KB - [best_1618.c](best_1618.c)
+Recompressed versions of `tolower` tables:
 
+* 5.6KB - [tolower_5750.c](tolower_5750.c)
+* 4.3KB - [tolower_4422.c](tolower_4422.c)
+* 2.1KB - [tolower_2112.c](tolower_2112.c)
+* 1.6KB - [tolower_1618.c](tolower_1618.c)
+
+Recompressed versions of `toupper` tables:
+
+* 5.7KB - [toupper_5866.c](toupper_5866.c)
+* 4.5KB - [toupper_4638.c](toupper_4638.c)
+* 2.2KB - [toupper_2258.c](toupper_2258.c)
+* 1.7KB - [toupper_1738.c](toupper_1738.c)
 
