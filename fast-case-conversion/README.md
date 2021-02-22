@@ -477,7 +477,7 @@ relatively small number of unique values.
 
 We can also do it in two ways.
 
-**Option A** - two 16-bit arrays, stored together, and the retrieval function 
+**Option A** - two 16-bit arrays and the retrieval function 
 of `arr[ idx[ch >> ...] + (ch & 0x...) ]`
 
 ![Single index](single-index.png)
