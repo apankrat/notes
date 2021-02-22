@@ -498,8 +498,8 @@ But we can do better still.
 
 ## Taking care of index
 
-As we've seen, smaller blocks sizes have larger indexes. We may
-also note that these indexes have very few distinct entries.
+As we've seen, smaller blocks sizes create larger indexes. We might've
+also noticed that these indexes have very few distinct entries.
 
 The index for the block size of 32 is **2048 entries** with only
 **55** uniques and the index for the block size of 4 is **16384
