@@ -335,11 +335,11 @@ A moderately optimized code can do around 50M checks per second.
 With the block size of 2048 we have 8 unique blocks. That's just
 40,320 permutations and the best exact squish is **5344**.
 
-With the block size of 1024 we have 10 unique blocks. That's 10!
-or 3,628,800 permutations, which take 0.1 sec to process and get
-to the answer - **2861**.
+With the block size of 1024 we have 10 unique blocks. That's 
+3,628,800 permutations, which take 0.1 sec to find the answer 
+- **2861**.
 
-With the block size of 512 we have 13 unique blocks - that's 
+With the block size of 512 we have 13 unique blocks. That's 
 6,227,020,800 permutations or ~ 100 seconds of processing time.
 Still doable and the answer is **1900**.
 
@@ -355,39 +355,37 @@ It just happens that underlying N x N matrices (of graph edge
 weights) show some well-pronounced patterns - there are 
 zero-filled rows and columns, non-zero cells are either rather 
 large or fairly small with nothing in between, etc. This appears
-to help getting decent results even from basic "logical" guesses.
+to help getting decent results even from some rudimentary
+"logical" guesses.
 
 For example, we can pick the most squishable pair of blocks and 
 then keep prepending and appending it with blocks that squish 
-the best with it.
-
-This alone will yield a squish of **972** for Wine's original 
-256 block size - a decent improvement over **742** of the 
-original block sequence.
+the best with it. This alone yields a squish of **972** for 
+Wine's original 256 block size - a decent improvement over 
+**742** of the original.
 
 We can also check how *just* appending or *just* prepending 
 fares in comparison. We can also *prefer* either appending or 
-prepending when both would yield the same improvement.
+prepending when both yield the same improvement.
 
-We can construct our block sequence out of *multiple parts*.
-That is, our assembly loop will be making a choice between (1) 
-adding a block to an existing part (2) merging two parts with 
-a block or (3) starting yet another part from a pair of blocks.
+Next, we can construct our block sequence out of *multiple parts*.
+That is, our sequence assembly loop will be making a choice 
+between (1) adding a block to an existing part (2) merging two 
+parts with a block or (3) starting yet another part from a pair
+of blocks.
 
-Then, once we have our sequence we can check if splitting it
-into two parts and swapping parts around would yield a better
-squish.
-
-Similarly, we can see if moving an item to another spot or
-swapping it with another item would increase a squish.
+Once we have our sequence we can check if splitting it into 
+two parts and swapping parts around would yield a better squish.
+We can also see if moving an item to another spot or swapping 
+it with another item would increase a squish.
 
 These are essentially random guesses, but it turns out that for
-whatever magical reason they *do* work when tried as a group.
+whatever magical reason they *do* work when tried together.
 
 In fact, they work so well that they manage to find the exact
 solution for 2048, 1024 and 512 block sizes.
 
-When used against other blocks sizes, this is the output:
+When used against other blocks sizes, this is the result:
 
     Block size    Max exact squish    Heuristic squish    Zero-block squish
     
@@ -405,14 +403,14 @@ When used against other blocks sizes, this is the output:
 
 ### Randomized shuffling
 
-In addition to educated guesses we can also try something as
-enlightened as randomized shuffling. Alas in an overnight test
-it didn't manage to improve upon the heuristic solutions for 
-any of the block sizes.
+In addition to educated guessing we can also try something even
+more enlightened - randomized shuffling. Alas in an overnight 
+test it didn't manage to improve upon the heuristic solutions 
+for any of the block sizes.
 
 ### Summarized
 
-Here's the tally up of our block reshuffling efforts:
+Long story short, here's what block reshuffling gets us:
 
     Block size  |  Best squish  |    Items    |    Index    |   Total
     
@@ -434,10 +432,10 @@ is **5750 bytes** or ~ **30%** smaller than the original.
 ## Separating the index
 
 The table size can be reduced a bit more by noticing that we never 
-have more than **256** unique index entries. So the index can be 
-built as `uint8_t[]` instead of `uint16_t[]`.
+have more than 256 **unique** index entries. This allows building
+the index as `uint8_t[]` instead of `uint16_t[]`.
 
-However this requires using a secondary index like so:
+However this requires using a secondary array like so:
 
     // for the block size of 64
     
@@ -500,23 +498,23 @@ But we can do better still.
 
 ## Taking care of index
 
-Smaller blocks sizes will have larger indexes that, most notably, 
-will have **very** few distinct entries.
+As we've seen, smaller blocks sizes have larger indexes. We may
+also note that these indexes have very few distinct entries.
 
 The index for the block size of 32 is **2048 entries** with only
 **55** uniques and the index for the block size of 4 is **16384
 entries** with only **78** uniques.
 
-A large array with massive redundancy. This looks ... *familiar*.
+Large arrays with massive redundancy. This looks ... *familiar*.
 
-So what do we do with it? Compress it but of course!
+So let's compress them too!
 
-Not to confuse things, we'll refer to the index of this new compression
-as **jndex** and its blocks as **sequences**.
+For the sake of some clarity, we'll refer to the index of this 
+new compression as **jndex** and its blocks as **sequences**.
 
 For each *block* size we take its index and iterate through different
-*sequence* sizes looking for the most compressible one. Here are the
-results:
+*sequence* sizes looking for the most compressible option. Here are 
+the results:
 
     Index size  |  Uniques  |  ---------------  Best compression  --------------  |
                                Jndex size  |  Seq size  |  Unique seqs  |  Items
