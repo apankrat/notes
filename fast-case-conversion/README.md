@@ -607,13 +607,13 @@ have the table down to **2121 bytes**, a reduction of ~ **74%**.
 Finally, if we splurge on 2 more memory references, the table
 size can be reduced to **1618 bytes**, a reduction of ~ **80%**.
 
-Pick your poison.
+Pick your favourite.
 
 # Conclusion
 
 Very fast case conversion of (the vast majority of) Unicode characters
-can be done with a handful of CPU cycles and static precomputed lookup 
-tables sized between 1.6KB to 8.6KB in size.
+can be done with a handful of CPU cycles and precomputed lookup tables 
+sized between 1.6KB to 8.6KB in size.
 
 The 8.6KB version, courtesy of Wine:
 * [casemap.c](https://github.com/wine-mirror/wine/blob/e909986e6ea5ecd49b2b847f321ad89b2ae4f6f1/libs/port/casemap.c)
