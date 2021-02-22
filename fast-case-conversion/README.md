@@ -477,18 +477,14 @@ relatively small number of unique values.
 
 We can also do it in two ways.
 
-### Option A
-
-Two 16-bit arrays, stored together, and the retrieval function 
+**Option A** - two 16-bit arrays, stored together, and the retrieval function 
 of `arr[ idx[ch >> ...] + (ch & 0x...) ]`
 
 ![Single index](single-index.png)
 
     2 bit ops, 1 addition, 2 memory references
 
-### Option B
-
-Two 16-bit arrays, one 8-bit array and the retrieval function 
+**Option B** - two 16-bit arrays, one 8-bit array and the retrieval function 
 of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
 
 ![Single index ex](single-index-ex.png)
