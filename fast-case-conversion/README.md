@@ -509,7 +509,7 @@ Large arrays with massive redundancy. This looks ... *familiar*.
 
 So let's compress them too!
 
-For the sake of some clarity, we'll refer to the index of this 
+To make things a bit less confusing, we'll refer to the index of this 
 new compression as **jndex** and its blocks as **sequences**.
 
 For each *block* size we take its index and iterate through different
