@@ -477,15 +477,19 @@ relatively small number of unique values.
 
 We can also do it in two ways.
 
-A) With two 16-bit arrays, stored together, and the retrieval
-function of `arr[ idx[ch >> ...] + (ch & 0x...) ]`
+### Option A
+
+Two 16-bit arrays, stored together, and the retrieval function 
+of `arr[ idx[ch >> ...] + (ch & 0x...) ]`
 
 ![Single index](single-index.png)
 
     2 bit ops, 1 addition, 2 memory references
 
-B) With two 16-bit arrays and an 8-bit one, with the retrieval
-function of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
+### Option B
+
+Two 16-bit arrays, one 8-bit array and the retrieval function 
+of `arr[ off[ idx[ch >> ...] ] + (ch & 0x...) ]`
 
 ![Single index ex](single-index-ex.png)
 
@@ -532,7 +536,9 @@ the results:
       32768           81            512           64           28          1240
 
 `Jndex size` and `Items` columns give us the compressed index size. As expected,
-the index compresses *really* well. The next question is how to encode it.
+the index compresses *really* well.
+
+The next question is how to encode it.
 
 ### Three arrays
 
