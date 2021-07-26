@@ -336,8 +336,7 @@ With the block size of 2048 we have 8 unique blocks. That's just
 40,320 permutations and the best exact squish is **5344**.
 
 With the block size of 1024 we have 10 unique blocks. That's 
-3,628,800 permutations, which take 0.1 sec to find the answer 
-- **2861**.
+3,628,800 permutations, which take 0.1 sec to find the answer - **2861**.
 
 With the block size of 512 we have 13 unique blocks. That's 
 6,227,020,800 permutations or ~ 100 seconds of processing time.
