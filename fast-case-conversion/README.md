@@ -134,7 +134,7 @@ So here's what's going on:
         ...
        block FF - [256 entries for values FF00 to FFFF]
     
-3. Once this is done, we may notice that only 17 blocks have are *not*
+3. Once this is done, we may notice that only 17 blocks are *not*
    completely zero-filled. These blocks are:
    
        00, 01, 02, 03, 04, 05, 10, 13, 1C, 1E, 1F, 21, 24, 2C, A6, A7, FF
