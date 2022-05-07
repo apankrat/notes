@@ -40,21 +40,23 @@ this data can be on:
     struct user_data  foo, bar;     // a couple of data items
     struct list_head  vip;          // "vip" list
     struct list_head  hip;          // "hip" list
-    
-    struct list_item * p;
-    struct user_data * u;
-    
-    ...
-    
+
     // populate lists
     list_add(&foo.vip_item, &vip);  // foo -> 'vip' list
 
     list_add(&bar.vip_item, &vip);  // bar -> 'vip' list
     list_add(&bar.hip_item, &hip);  // bar -> 'hip' list
     
+    ...
+    
     // traverse the 'vip' list
+    struct list_item * p;
+    struct user_data * u;
+
     for (p = vip.first; p; p = p->next)
         u = container_of(p, struct user_data, vip_item);
+        
+    ...
     
     // remove 'bar' from its lists
     list_del(&bar.vip_item);
